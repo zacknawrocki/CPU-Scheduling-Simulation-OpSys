@@ -13,7 +13,7 @@ struct process{
 int main(int argc, char ** argv)
 {
 	int rand_num = atoi(argv[1]); //random number
-	srand48(RandNum); 
+	srand48(rand_num); 
 	double lambda = atof(argv[2]);
 	double tail = atoi(argv[3]);
 	int num_of_proc = atoi(argv[4]); //Process IDs are assigned in alphabetical order A through Z. therefore max 26
