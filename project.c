@@ -1,5 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
+#include <unistd.h>
+#include <time.h>
+#include <stdbool.h> 
 
 struct process{
 	int pid; //process ID
@@ -75,15 +79,77 @@ int main(int argc,char** argv)
     char *begin_or_end = "END";
     begin_or_end = argv[8];
 
-    if ( !(begin_or_end == "BEGINNING" || begin_or_end == "END" || begin_or_end == "") ){
-        fprintf(stderr, "invalid begin_or_end\n.");
+    if ( !(begin_or_end == "BEGINNING" || begin_or_end == "END" || begin_or_end == NULL) ){
+        fprintf(stderr, "invalid begin_or_end: %s\n.", begin_or_end);
         return EXIT_FAILURE;
     }
 
     // ==== finish parcing the input parameters ====
 
+    // start the random number generator
+
+    // the following code is for each process ->
+    
+    srand48(rand_num);
+    bool valid = false;
+    float t_arrive; int num_CPU_burst;
 
 
+    while (valid == false){
+        t_arrive = floor( -log( drand48() ) / lambda );
+        if (t_arrive < tail){
+            valid = true;
+        }
+    }
+    printf("initial process arrival time: %f\n", t_arrive);
+
+    valid = false;
+    while (valid == false){
+        num_CPU_burst = (int) (-log( drand48() ) / lambda * 100) + 1;
+        if (num_CPU_burst < tail){
+            valid = true;
+        }
+    }
+
+
+    printf("number of CPU bursts: %d\n", num_CPU_burst);
+
+    int t_CPU_burst; int t_IO_burst;
+    for ( int i = 0; i < num_CPU_burst; i++){
+
+        if ( i == num_CPU_burst -1 ){
+            valid = false;
+            while (valid == false){
+                t_CPU_burst = ceil( -log( drand48() ) / lambda  );
+                if (t_CPU_burst < tail){
+                    valid = true;
+                }
+            }
+            printf("%d (last) actual CPU burst %d, actual IO busrt %d\n", i+1, t_CPU_burst, t_IO_burst);
+            break;
+        }
+        
+        valid = false;
+        while (valid == false){
+            t_CPU_burst = ceil( -log( drand48() ) / lambda  );
+            if (t_CPU_burst < tail){
+                valid = true;
+            }
+        }
+        
+        valid = false;
+        while (valid == false){
+            t_IO_burst = ceil( -log( drand48() ) / lambda  );
+            if (t_IO_burst < tail){
+                valid = true;
+            }
+        }
+
+
+        printf("%d actual CPU burst %d, actual IO busrt %d\n", i+1, t_CPU_burst, t_IO_burst);
+        
+
+    }
 
 
     return 0;
