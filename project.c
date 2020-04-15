@@ -89,7 +89,7 @@ int main(int argc,char** argv)
     // start the random number generator
 
     // the following code is for each process ->
-    
+
     srand48(rand_num);
     bool valid = false;
     float t_arrive; int num_CPU_burst;
@@ -125,29 +125,29 @@ int main(int argc,char** argv)
                     valid = true;
                 }
             }
-            printf("%d (last) actual CPU burst %d, actual IO busrt %d\n", i+1, t_CPU_burst, t_IO_burst);
+            printf("%d (last) actual CPU burst %d\n",i+1, t_CPU_burst);
             break;
         }
-        
-        valid = false;
-        while (valid == false){
-            t_CPU_burst = ceil( -log( drand48() ) / lambda  );
-            if (t_CPU_burst < tail){
-                valid = true;
+        else{
+            valid = false;
+            while (valid == false){
+                t_CPU_burst = ceil( -log( drand48() ) / lambda  );
+                if (t_CPU_burst < tail){
+                    valid = true;
+                }
             }
-        }
-        
-        valid = false;
-        while (valid == false){
-            t_IO_burst = ceil( -log( drand48() ) / lambda  );
-            if (t_IO_burst < tail){
-                valid = true;
+            
+            valid = false;
+            while (valid == false){
+                t_IO_burst = ceil( -log( drand48() ) / lambda  );
+                if (t_IO_burst < tail){
+                    valid = true;
+                }
             }
-        }
 
 
-        printf("%d actual CPU burst %d, actual IO busrt %d\n", i+1, t_CPU_burst, t_IO_burst);
-        
+            printf("%d actual CPU burst %d, actual IO busrt %d\n", i+1, t_CPU_burst, t_IO_burst);
+        }
 
     }
 
