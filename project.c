@@ -10,8 +10,7 @@ struct process{
 	char id; 
 	int t_arrive; 
 	int num_cpu_burst; 
-	// need a pointer to the point of int( cpu burst & io burst for each burst)
-    int **burst; 
+	int **burst; 
 	int preemptions;
 	int TAT;
 } pcs;
@@ -225,7 +224,18 @@ int main(int argc,char** argv)
     
 
 
+    /*
+    
+    FCFS();
 
+    ptr_pcs = all_processes;
+    SRT(ptr_pcs, num_of_proc, context_switch, alpha);
+
+    SJF();
+
+    RR();
+
+    */
 
 
 
@@ -249,3 +259,5 @@ int main(int argc,char** argv)
 
     return 0;
 }
+
+
