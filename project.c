@@ -194,8 +194,14 @@ int main(int argc,char** argv)
 
     // finish all preparations
 
-    
+
+
+    /*
+
+    //=============================================================
     // test code to check if the process data are stored correctly
+    //=============================================================
+
 
     ptr_pcs = all_processes;
 
@@ -214,7 +220,7 @@ int main(int argc,char** argv)
         ptr_pcs++;
     }
 
-    
+    */
 
 
     
@@ -296,8 +302,11 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
         srt_ptr_pcs++;
         ptr_pcs++;
     }
+    
 
+    //============================================================
     // all the data should have been copyed to srt_all_processes
+    //============================================================
 
     //put srt_ptr_pcs at the head of srt_all_processes
     srt_ptr_pcs = srt_all_processes;
@@ -353,7 +362,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
             t_cs --;
         }
         
-        //printf("t_run: %d, t_cs: %d, cpu burst: %c, io burst: %c\n", t_run, t_cs, srt_id_pcs_running_cpu, srt_id_pcs_running_io);
+        // printf("t_run: %d, t_cs: %d, cpu burst: %c, io burst: %c, new burst: %d\n", t_run, t_cs, srt_id_pcs_running_cpu, srt_id_pcs_running_io, new_burst);
             
 
         for (int i = 0; i < num_of_proc; i++){
@@ -386,8 +395,8 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                     for (int j = 0; j < num_of_proc; j++){
                         if (srt_ptr_pcs_cpu_queue[j] -> id == srt_id_pcs_running_cpu){
                             //remove this process in the queue
-                            for (int k = j; k < num_of_proc; k++){
-                                srt_ptr_pcs_cpu_queue[j] = srt_ptr_pcs_cpu_queue[j+1];
+                            for (int k = j; k < num_of_proc-1; k++){
+                                srt_ptr_pcs_cpu_queue[k] = srt_ptr_pcs_cpu_queue[k+1];
                             }
                             srt_num_pcs_cpu_queue--;
                         }
@@ -417,7 +426,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
 
                             if (srt_ptr_burst[j][0] != 0){
                                 break;
-                                break;
+                                
                             }
                         
                         }
@@ -441,10 +450,11 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                             printf("time %dms: Process %c switching out of CPU; will block on I/O until time %dms [Q <empty>]\n", t_run, srt_id_pcs_running_io, t_run + t_cs + srt_ptr_burst[j][1]);
 
                             break;
-                            break;
+                            
                         }
 
                     }
+                    break;
 
                 }
 
@@ -478,20 +488,52 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                             srt_id_pcs_running_io = '-';
                             
 
-                            new_burst = true;
+                            // use the first one in queue as the next process for CPU burst
+                            srt_ptr_pcs_running_cpu = srt_ptr_pcs_cpu_queue[0];
+                            srt_id_pcs_running_cpu = srt_ptr_pcs_cpu_queue[0] -> id;
+
+                            for (int k = 0; k < num_of_proc; k++){
+                                if (srt_ptr_pcs_cpu_queue[k] -> id == srt_id_pcs_running_cpu){
+                                    //remove this process in the queue
+                                    for (int l = k; l < num_of_proc - 1; l++){
+                                        srt_ptr_pcs_cpu_queue[l] = srt_ptr_pcs_cpu_queue[l+1];
+                                    }
+                                    srt_num_pcs_cpu_queue--;
+                                    break;
+                                }
+                            }
+
+                            t_cs = context_switch / 2;
+
+                            //find the first available value in srt_ptr_pcs_running_cpu -> burst
+                            int** srt_ptr_tmp = srt_ptr_pcs_running_cpu->burst;
+                            int tmp = 0;
+                            for (int m = 0; m < srt_ptr_pcs_running_cpu->num_cpu_burst; m++){
+                                if (srt_ptr_tmp[m][0] != 0){
+                                    tmp = srt_ptr_tmp[m][0];
+                                    break;
+                                }
+                            }
+
+                            printf("time %dms: Process %c (tau %dms) started using the CPU for %dms burst [Q <empty>]\n", t_run, srt_ptr_pcs_running_cpu->id,srt_ptr_pcs_running_cpu->tau, tmp);
+                            new_burst = false;
+                            finish_cpu_burst = false;
+
+
 
                             break;
                             
                         }
 
                     }
+                    break;
 
                 }
 
             }
 
             //printf("one cpu burst finished, process %c is ready to go\n", srt_ptr_pcs_cpu_queue[srt_num_pcs_cpu_queue]->id);
-            
+            /*
             if (new_burst == true){
 
                 struct process *srt_ptr_pcs_current = srt_ptr_pcs_cpu_queue[0];
@@ -501,7 +543,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                 for (int j = 0; j < num_of_proc; j++){
                     if (srt_ptr_pcs_cpu_queue[j] -> id == srt_id_pcs_running_cpu){
                         //remove this process in the queue
-                        for (int k = j; k < num_of_proc; k++){
+                        for (int k = j; k < num_of_proc-1; k++){
                             srt_ptr_pcs_cpu_queue[j] = srt_ptr_pcs_cpu_queue[j+1];
                         }
                         srt_num_pcs_cpu_queue--;
@@ -512,7 +554,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
 
                 //find the first available value in srt_ptr_pcs_running_cpu -> burst
 
-                
+
 
                 printf("time %dms: Process %c (tau %dms) started using the CPU for %dms burst [Q <empty>]\n", t_run, srt_ptr_pcs_running_cpu->id,srt_ptr_pcs_running_cpu->tau ,srt_ptr_pcs_running_cpu->burst[0][0]);
                 new_burst = false;
@@ -521,6 +563,8 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                 
             
             }
+
+            */
 
 
 
