@@ -319,6 +319,8 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
     struct process *srt_ptr_pcs_cpu_queue[num_of_proc];
     struct process *srt_ptr_pcs_io_queue[num_of_proc];
 
+    int **srt_ptr_tmp;
+
     int srt_num_pcs_cpu_queue = 0;
     int srt_num_pcs_io_queue = 0;
 
@@ -333,6 +335,11 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
     bool finish = false;
     bool finish_cpu_burst = false;
     bool new_burst = false;
+    bool finish_process = false;
+    bool finish_srt;
+
+    int num_finish_process = 0;
+
 
     
     // TODO: not consider tie for now 
@@ -366,6 +373,37 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
             
 
         for (int i = 0; i < num_of_proc; i++){
+
+            //if a process is finished, remove it from the srt_all_processes array
+            finish_process = true;    
+            srt_ptr_tmp = srt_ptr_pcs -> burst;
+            for (int j = 0; j < srt_ptr_pcs -> num_cpu_burst; j++){
+                if (srt_ptr_tmp[j][0]!= 0 || srt_ptr_tmp[j][1]!=0){
+                    finish_process = false;
+                    break;
+                }
+            }
+
+
+            if (finish_process == true){
+                num_finish_process++;
+
+                if (num_of_proc == 1){
+                    finish = true;
+                    break;
+                }
+                else {
+                    for (int j = i; j < num_of_proc - 1; j++){
+                        srt_all_processes[j] = srt_all_processes[j+1];
+                    }
+                }
+            }
+
+            if (num_of_proc == num_finish_process){
+                finish = true;
+                break;
+            }
+
             
             
             
@@ -506,13 +544,19 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                             t_cs = context_switch / 2;
 
                             //find the first available value in srt_ptr_pcs_running_cpu -> burst
-                            int** srt_ptr_tmp = srt_ptr_pcs_running_cpu->burst;
+                            srt_ptr_tmp = srt_ptr_pcs_running_cpu->burst;
                             int tmp = 0;
+                            bool finish_pcs = true;
                             for (int m = 0; m < srt_ptr_pcs_running_cpu->num_cpu_burst; m++){
                                 if (srt_ptr_tmp[m][0] != 0){
                                     tmp = srt_ptr_tmp[m][0];
+                                    finish_pcs = false;
                                     break;
                                 }
+                            }
+
+                            if (finish_pcs == true){
+                                break;
                             }
 
                             printf("time %dms: Process %c (tau %dms) started using the CPU for %dms burst [Q <empty>]\n", t_run, srt_ptr_pcs_running_cpu->id,srt_ptr_pcs_running_cpu->tau, tmp);
@@ -572,11 +616,11 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
         
         }
 
-
+        /*
         if (t_run == 2500){
             finish = true;
         }
-
+        */
 
 
 
