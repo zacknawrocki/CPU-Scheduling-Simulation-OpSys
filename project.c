@@ -16,6 +16,8 @@ struct process{
 } pcs;
 
 
+void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
+
 int main(int argc,char** argv) 
 { 
 
@@ -231,8 +233,8 @@ int main(int argc,char** argv)
     
     //FCFS();
 
-    //ptr_pcs = all_processes;
-    //SRT(ptr_pcs, num_of_proc, context_switch, alpha);
+    ptr_pcs = all_processes;
+    SRT(ptr_pcs, num_of_proc, context_switch, alpha);
 
     //SJF();
 
@@ -265,3 +267,53 @@ int main(int argc,char** argv)
 }
 
 
+
+void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha){
+    //need to dynamically again for all_process within this function so that we won't modify the original data.
+
+    struct process srt_all_processes[num_of_proc];
+    struct process *srt_ptr_pcs = srt_all_processes;
+
+    
+    for (int i = 0; i < num_of_proc; i++){
+        srt_ptr_pcs -> id = ptr_pcs -> id;
+        srt_ptr_pcs -> t_arrive = ptr_pcs -> t_arrive;
+        srt_ptr_pcs -> num_cpu_burst = ptr_pcs -> num_cpu_burst;
+
+        int **srt_burst;
+        srt_burst = calloc(srt_ptr_pcs -> num_cpu_burst, sizeof(int *));
+
+        for ( int i = 0; i < srt_ptr_pcs -> num_cpu_burst; i++){
+
+            srt_burst[i] = calloc(2, sizeof(int));
+
+            srt_burst[i][0] = ptr_pcs -> burst[i][0];
+            srt_burst[i][1] = ptr_pcs -> burst[i][1];
+
+        }
+
+        srt_ptr_pcs -> burst = srt_burst;
+
+        srt_ptr_pcs++;
+        ptr_pcs++;
+    }
+
+    // all the data should have been copyed to srt_all_processes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// TODO: Free the dynamically allocated memory
+    
+}
