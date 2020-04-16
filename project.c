@@ -4,15 +4,17 @@
 #include <unistd.h>
 #include <time.h>
 #include <stdbool.h> 
+#include <string.h>
 
 struct process{
-	int pid; //process ID
-	int AT; //arrival time
-	int WT; //Waittime
-	int BT; //burst time
+	char id; 
+	int t_arrive; 
+	int num_cpu_burst; 
+	// need a pointer to the point of int( cpu burst & io burst for each burst)
+    int **burst; 
 	int preemptions;
 	int TAT;
-};
+} pcs;
 
 
 int main(int argc,char** argv) 
@@ -46,6 +48,7 @@ int main(int argc,char** argv)
     fourth input argument is the number of processes to simulate
     Process IDs are A->Z, so 26 at most
     */
+    char ID_list[26] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     int num_of_proc = atoi(argv[4]);
     if (num_of_proc > 26){
         fprintf(stderr, "too many processes\n.");
@@ -94,62 +97,152 @@ int main(int argc,char** argv)
     bool valid = false;
     float t_arrive; int num_CPU_burst;
 
-
-    while (valid == false){
-        t_arrive = floor( -log( drand48() ) / lambda );
-        if (t_arrive < tail){
-            valid = true;
-        }
-    }
-    printf("initial process arrival time: %f\n", t_arrive);
-
-    valid = false;
-    while (valid == false){
-        num_CPU_burst = (int) (-log( drand48() ) / lambda * 100) + 1;
-        if (num_CPU_burst < tail){
-            valid = true;
-        }
-    }
+    //use an array of struct to store all the processes' data
+    struct process all_processes[num_of_proc];
+    struct process *ptr_pcs = NULL;
+    ptr_pcs = all_processes;
 
 
-    printf("number of CPU bursts: %d\n", num_CPU_burst);
 
-    int t_CPU_burst; int t_IO_burst;
-    for ( int i = 0; i < num_CPU_burst; i++){
+    for (int i = 0; i < num_of_proc; i++){
+        // assign the id for process
+        ptr_pcs -> id = ID_list[i];
 
-        if ( i == num_CPU_burst -1 ){
-            valid = false;
-            while (valid == false){
-                t_CPU_burst = ceil( -log( drand48() ) / lambda  );
-                if (t_CPU_burst < tail){
-                    valid = true;
-                }
+
+        while (valid == false){
+            t_arrive =  floor( -log( drand48() ) / lambda );
+            if (t_arrive < tail){
+                valid = true;
             }
-            printf("%d (last) actual CPU burst %d\n",i+1, t_CPU_burst);
-            break;
         }
-        else{
-            valid = false;
-            while (valid == false){
-                t_CPU_burst = ceil( -log( drand48() ) / lambda  );
-                if (t_CPU_burst < tail){
-                    valid = true;
-                }
+        printf("initial process arrival time: %f\n", t_arrive);
+
+        ptr_pcs -> t_arrive = t_arrive;
+
+        valid = false;
+        while (valid == false){
+            num_CPU_burst = (int) (-log( drand48() ) / lambda * 100) + 1;
+            if (num_CPU_burst < tail){
+                valid = true;
             }
-            
-            valid = false;
-            while (valid == false){
-                t_IO_burst = ceil( -log( drand48() ) / lambda  );
-                if (t_IO_burst < tail){
-                    valid = true;
-                }
-            }
+        }
+        printf("number of CPU burmemset(array, -1, sizeof(array[0][0]) * row * count)sts: %d\n", num_CPU_burst);
+
+        ptr_pcs -> num_cpu_burst = num_CPU_burst;
+
+        //burst store all the bursts' information
+
+        /*
+        int burst[num_CPU_burst][2];    
+
+        int (*ptr_burst)[num_CPU_burst][2] = &burst;
+
+        memset(burst, 0, sizeof(int)*num_CPU_burst*2);  
+
+    */
+
+        int **burst;
+        burst = calloc(num_CPU_burst, sizeof(int *));
 
 
-            printf("%d actual CPU burst %d, actual IO busrt %d\n", i+1, t_CPU_burst, t_IO_burst);
+        int t_CPU_burst; int t_IO_burst;
+
+        for ( int i = 0; i < num_CPU_burst; i++){
+
+            burst[i] = calloc(2, sizeof(int));
+
+            if ( i == num_CPU_burst -1 ){
+                valid = false;
+                while (valid == false){
+                    t_CPU_burst = ceil( -log( drand48() ) / lambda  );
+                    if (t_CPU_burst < tail){
+                        valid = true;
+                    }
+                }
+                printf("%d (last) actual CPU burst %d\n",i+1, t_CPU_burst);
+                
+                burst[i][0] = t_CPU_burst;
+                burst[i][1] = -1;
+
+                break;
+            }
+            else{
+                valid = false;
+                while (valid == false){
+                    t_CPU_burst = ceil( -log( drand48() ) / lambda  );
+                    if (t_CPU_burst < tail){
+                        valid = true;
+                    }
+                }
+                
+                valid = false;
+                while (valid == false){
+                    t_IO_burst = ceil( -log( drand48() ) / lambda  );
+                    if (t_IO_burst < tail){
+                        valid = true;
+                    }
+                }
+                printf("%d actual CPU burst %d, actual IO busrt %d\n", i+1, t_CPU_burst, t_IO_burst);
+
+                burst[i][0] = t_CPU_burst;
+                burst[i][1] = t_IO_burst;
+
+            }
+
         }
+
+
+        ptr_pcs -> burst = burst;
+
+        //move to the next process
+        ptr_pcs++;
 
     }
+
+    // finish all tptr_bursthe preparations
+
+    /*
+        test code to check if the process data are stored correctly
+    */
+
+    ptr_pcs = all_processes;
+
+    for (int j=0; j < num_of_proc; j++){
+        int num_cpu =  ptr_pcs->num_cpu_burst ;
+        printf("each processes:\nid: %c\narrive time: %d\nnumber of bursts: %d\n",ptr_pcs->id, ptr_pcs->t_arrive, ptr_pcs->num_cpu_burst);
+    
+        int **ptr_b = ptr_pcs->burst;
+        
+
+        
+        for (int k=0; k < ptr_pcs->num_cpu_burst; k++){
+            printf("%d each burst - actual cpu burst: %d\n               actual io burst: %d\n", k, ptr_b[k][0], ptr_b[k][1]);
+        }
+        
+        
+    }
+
+    
+
+
+
+
+
+
+
+    //need to free the dynamically allocated memory at the end of the code
+
+    ptr_pcs = all_processes;
+
+    for(int i = 0; i < num_of_proc; i++){
+
+        for (int j=0; j < ptr_pcs->num_cpu_burst; j++){
+            free(ptr_pcs->burst[j]);
+        }
+        free(ptr_pcs->burst);
+
+    }
+
 
 
     return 0;
