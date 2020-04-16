@@ -12,6 +12,7 @@ struct process{
 	int num_cpu_burst; 
 	int **burst; 
     int tau;
+    int next_tau;  //SRT need it to calculate tau
 	int preemptions;
 	int TAT;
 } pcs;
