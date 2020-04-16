@@ -219,7 +219,7 @@ int main(int argc,char** argv)
             printf("%d each burst - actual cpu burst: %d\n               actual io burst: %d\n", k, ptr_b[k][0], ptr_b[k][1]);
         }
         
-        
+        ptr_pcs++;
     }
 
     
@@ -240,6 +240,8 @@ int main(int argc,char** argv)
             free(ptr_pcs->burst[j]);
         }
         free(ptr_pcs->burst);
+
+        ptr_pcs++;
 
     }
 
