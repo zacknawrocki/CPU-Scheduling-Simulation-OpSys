@@ -224,18 +224,22 @@ int main(int argc,char** argv)
     
 
 
-    /*
     
-    FCFS();
+    //============================================    
+    //Implement your own function here
+    //============================================  
+    
+    //FCFS();
 
-    ptr_pcs = all_processes;
-    SRT(ptr_pcs, num_of_proc, context_switch, alpha);
+    //ptr_pcs = all_processes;
+    //SRT(ptr_pcs, num_of_proc, context_switch, alpha);
 
-    SJF();
+    //SJF();
 
-    RR();
+    //RR();
 
-    */
+    
+
 
 
 
