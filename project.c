@@ -267,6 +267,8 @@ int main(int argc,char** argv)
 
 
 
+
+
 void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha){
     //need to dynamically again for all_process within this function so that we won't modify the original data.
 
@@ -631,8 +633,6 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                             
                             
 
-
-
                             // ===============================
                             // formatted print the cpu queue:
                             // ===============================
@@ -697,6 +697,34 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                             }
 
                             if (finish_pcs == true){
+
+                                // ===============================
+                                // formatted print the cpu queue:
+                                // ===============================
+                                if (srt_num_pcs_cpu_queue == 0){
+                                    char cpu_queue[] = {'<','e','m','p','t','y','>','\0'};
+                                    printf("time %dms: Process %c terminated [Q %s]\n", t_run, srt_ptr_pcs_running_cpu->id, cpu_queue);
+                                
+                                }
+                                else{
+                                    char cpu_queue[srt_num_pcs_cpu_queue * 2];
+                                    memset(cpu_queue, '\0', sizeof(cpu_queue));
+
+                                    for (int j = 0; j < srt_num_pcs_cpu_queue; j++){
+                                        cpu_queue[j*2] = srt_ptr_pcs_cpu_queue[j]->id;
+                                        if (j > 0){
+                                            cpu_queue[j*2 - 1] = ' ';
+                                        }
+                                    }
+                                    printf("time %dms: Process %c terminated [Q %s]\n", t_run, srt_ptr_pcs_running_cpu->id, cpu_queue);
+                                
+                                }
+                                // ===============================
+                                // end of formatted print queue
+                                // ===============================
+
+                                
+
                                 break;
                             }
 
@@ -760,10 +788,8 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
 
     }
 
-    
 
-
-
+    printf("time %dms: Simulator ended for SRT [Q <empty>]\n", t_run);
 
     // Free the dynamically allocated memory
 
