@@ -340,7 +340,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
     bool finish_srt;
 
     int num_finish_process = 0;
-
+    int srt_tau;
 
     
     // TODO: not consider tie for now 
@@ -444,6 +444,10 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                     struct process *srt_ptr_pcs_current = srt_ptr_pcs;
                     srt_ptr_pcs_running_cpu = srt_ptr_pcs_current;
                     srt_id_pcs_running_cpu = srt_ptr_pcs -> id;
+
+                    //next_tau is basically t_i for calculating tau
+                    srt_ptr_pcs_running_cpu->next_tau = srt_ptr_pcs->burst[0][0];
+
                     printf("time %dms: Process %c (tau %dms) started using the CPU for %dms burst [Q <empty>]\n", t_run, srt_ptr_pcs->id,srt_ptr_pcs->tau ,srt_ptr_pcs->burst[0][0]);
                     new_burst = false;
                 }
@@ -476,7 +480,15 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                             srt_ptr_pcs_running_cpu->num_cpu_burst--;
                             printf("time %dms: Process %c (tau %dms) completed a CPU burst; %d bursts to go [Q <empty>]\n",t_run,srt_ptr_pcs_running_cpu->id, srt_ptr_pcs_running_cpu->tau, srt_ptr_pcs_running_cpu->num_cpu_burst);
                             
+                            
                             // TODO: recalculate tau
+                            srt_tau = alpha * (srt_ptr_pcs_running_cpu -> next_tau) + (1 - alpha) * srt_ptr_pcs_running_cpu -> tau;
+                            
+                            printf("time %dms: Recalculated tau = %dms for process %c [Q <empty>]\n", t_run, srt_tau, srt_ptr_pcs_running_cpu->id);
+
+                            srt_ptr_pcs_running_cpu -> tau = srt_tau;
+
+
 
 
                             srt_ptr_pcs_running_io = srt_ptr_pcs_running_cpu;
@@ -559,6 +571,8 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                             if (finish_pcs == true){
                                 break;
                             }
+
+                            srt_ptr_pcs_running_cpu -> next_tau = tmp;
 
                             printf("time %dms: Process %c (tau %dms) started using the CPU for %dms burst [Q <empty>]\n", t_run, srt_ptr_pcs_running_cpu->id,srt_ptr_pcs_running_cpu->tau, tmp);
                             new_burst = false;
