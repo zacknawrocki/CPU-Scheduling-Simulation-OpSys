@@ -231,6 +231,7 @@ int main(int argc,char** argv)
     
     //FCFS();
 
+    //reset the pointer point to the start of the all_process array
     ptr_pcs = all_processes;
     SRT(ptr_pcs, num_of_proc, context_switch, alpha);
 
@@ -419,10 +420,16 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                 srt_id_pcs_running_cpu = srt_ptr_pcs->id;
 
                 t_cs = context_switch / 2;
-                new_burst = true;printf("time %dms: Process %c (tau %dms) arrived; added to ready queue [Q %c]\n", t_run, srt_ptr_pcs->id, srt_ptr_pcs->tau, srt_ptr_pcs->id);
-                
-                //print the cpu queue:
+                //a new burst is coming after the context_switch
+                new_burst = true;
 
+
+                
+                //printf("time %dms: Process %c (tau %dms) arrived; added to ready queue [Q %c]\n", t_run, srt_ptr_pcs->id, srt_ptr_pcs->tau, srt_ptr_pcs->id);
+                
+                // ===============================
+                // formatted print the cpu queue:
+                // ===============================
                 if (srt_num_pcs_cpu_queue == 0){
                     char cpu_queue[] = {'<','e','m','p','t','y','>','\0'};
                     printf("time %dms: Process %c (tau %dms) arrived; added to ready queue [Q %s]\n", t_run, srt_ptr_pcs->id, srt_ptr_pcs->tau, cpu_queue);
@@ -438,12 +445,12 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                             cpu_queue[j*2 - 1] = ' ';
                         }
                     }
-
-                    printf("%s", cpu_queue);
                     printf("time %dms: Process %c (tau %dms) arrived; added to ready queue [Q %s]\n", t_run, srt_ptr_pcs->id, srt_ptr_pcs->tau, cpu_queue);
 
                 }
-                
+                // ===============================
+                // end of formatted print queue
+                // ===============================
                 
 
                 
@@ -475,9 +482,36 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
 
                     //next_tau is basically t_i for calculating tau
                     srt_ptr_pcs_running_cpu->next_tau = srt_ptr_pcs->burst[0][0];
-
-                    printf("time %dms: Process %c (tau %dms) started using the CPU with %dms burst remaining [Q <empty>]\n", t_run, srt_ptr_pcs->id,srt_ptr_pcs->tau ,srt_ptr_pcs->burst[0][0]);
                     new_burst = false;
+
+                    
+                    // ===============================
+                    // formatted print the cpu queue:
+                    // ===============================
+                    if (srt_num_pcs_cpu_queue == 0){
+                        char cpu_queue[] = {'<','e','m','p','t','y','>','\0'};
+                        printf("time %dms: Process %c (tau %dms) started using the CPU with %dms burst remaining [Q %s]\n", t_run, srt_ptr_pcs->id,srt_ptr_pcs->tau ,srt_ptr_pcs->burst[0][0], cpu_queue);
+                    
+                    }
+                    else{
+                        char cpu_queue[srt_num_pcs_cpu_queue * 2];
+                        memset(cpu_queue, '\0', sizeof(cpu_queue));
+
+                        for (int j = 0; j < srt_num_pcs_cpu_queue; j++){
+                            cpu_queue[j*2] = srt_ptr_pcs_cpu_queue[j]->id;
+                            if (j > 0){
+                                cpu_queue[j*2 - 1] = ' ';
+                            }
+                        }
+                        printf("time %dms: Process %c (tau %dms) started using the CPU with %dms burst remaining [Q %s]\n", t_run, srt_ptr_pcs->id,srt_ptr_pcs->tau ,srt_ptr_pcs->burst[0][0], cpu_queue);
+                    
+                    }
+                    // ===============================
+                    // end of formatted print queue
+                    // ===============================
+                    
+
+
                 }
             
             }
@@ -506,27 +540,62 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                         if (srt_ptr_burst[j][0] == 0 && srt_ptr_burst[j][1] != 0){
 
                             srt_ptr_pcs_running_cpu->num_cpu_burst--;
-                            printf("time %dms: Process %c (tau %dms) completed a CPU burst; %d bursts to go [Q <empty>]\n",t_run,srt_ptr_pcs_running_cpu->id, srt_ptr_pcs_running_cpu->tau, srt_ptr_pcs_running_cpu->num_cpu_burst);
-                            
-                            
-                            // TODO: recalculate tau
-                            srt_tau = alpha * (srt_ptr_pcs_running_cpu -> next_tau) + (1 - alpha) * srt_ptr_pcs_running_cpu -> tau;
-                            
-                            printf("time %dms: Recalculated tau = %dms for process %c [Q <empty>]\n", t_run, srt_tau, srt_ptr_pcs_running_cpu->id);
-
-                            srt_ptr_pcs_running_cpu -> tau = srt_tau;
-
-
-
-
                             srt_ptr_pcs_running_io = srt_ptr_pcs_running_cpu;
                             srt_id_pcs_running_io = srt_id_pcs_running_cpu;
 
+
+                            
+                            // ===============================
+                            // formatted print the cpu queue:
+                            // ===============================
+                            if (srt_num_pcs_cpu_queue == 0){
+                                char cpu_queue[] = {'<','e','m','p','t','y','>','\0'};
+                                
+                                printf("time %dms: Process %c (tau %dms) completed a CPU burst; %d bursts to go [Q %s]\n",t_run,srt_ptr_pcs_running_cpu->id, srt_ptr_pcs_running_cpu->tau, srt_ptr_pcs_running_cpu->num_cpu_burst, cpu_queue);
+                                // TODO: recalculate tau
+                                srt_tau = alpha * (srt_ptr_pcs_running_cpu -> next_tau) + (1 - alpha) * srt_ptr_pcs_running_cpu -> tau;
+                                srt_ptr_pcs_running_cpu -> tau = srt_tau;
+                                printf("time %dms: Recalculated tau = %dms for process %c [Q %s]\n", t_run, srt_tau, srt_ptr_pcs_running_cpu->id, cpu_queue);
+                                printf("time %dms: Process %c switching out of CPU; will block on I/O until time %dms [Q %s]\n", t_run, srt_id_pcs_running_io, t_run + t_cs + srt_ptr_burst[j][1], cpu_queue);
+
+                            }
+                            else{
+                                char cpu_queue[srt_num_pcs_cpu_queue * 2];
+                                memset(cpu_queue, '\0', sizeof(cpu_queue));
+
+                                for (int j = 0; j < srt_num_pcs_cpu_queue; j++){
+                                    cpu_queue[j*2] = srt_ptr_pcs_cpu_queue[j]->id;
+                                    if (j > 0){
+                                        cpu_queue[j*2 - 1] = ' ';
+                                    }
+                                }
+                                
+                                printf("time %dms: Process %c (tau %dms) completed a CPU burst; %d bursts to go [Q %s]\n",t_run,srt_ptr_pcs_running_cpu->id, srt_ptr_pcs_running_cpu->tau, srt_ptr_pcs_running_cpu->num_cpu_burst, cpu_queue);
+                                // TODO: recalculate tau
+                                srt_tau = alpha * (srt_ptr_pcs_running_cpu -> next_tau) + (1 - alpha) * srt_ptr_pcs_running_cpu -> tau;
+                                srt_ptr_pcs_running_cpu -> tau = srt_tau;
+                                printf("time %dms: Recalculated tau = %dms for process %c [Q %s]\n", t_run, srt_tau, srt_ptr_pcs_running_cpu->id, cpu_queue);
+                                printf("time %dms: Process %c switching out of CPU; will block on I/O until time %dms [Q %s]\n", t_run, srt_id_pcs_running_io, t_run + t_cs + srt_ptr_burst[j][1], cpu_queue);
+
+                            }
+                            // ===============================
+                            // end of formatted print queue
+                            // ===============================
+                            
                             srt_ptr_pcs_running_cpu = NULL;
                             srt_id_pcs_running_cpu = '-';
                             t_cs = context_switch / 2;
+                            
+                            /*
+                            printf("time %dms: Process %c (tau %dms) completed a CPU burst; %d bursts to go [Q <empty>]\n",t_run,srt_ptr_pcs_running_cpu->id, srt_ptr_pcs_running_cpu->tau, srt_ptr_pcs_running_cpu->num_cpu_burst);
+                            // TODO: recalculate tau
+                            srt_tau = alpha * (srt_ptr_pcs_running_cpu -> next_tau) + (1 - alpha) * srt_ptr_pcs_running_cpu -> tau;
+                            srt_ptr_pcs_running_cpu -> tau = srt_tau;
+                            printf("time %dms: Recalculated tau = %dms for process %c [Q <empty>]\n", t_run, srt_tau, srt_ptr_pcs_running_cpu->id);
+                            */
+              
 
-                            printf("time %dms: Process %c switching out of CPU; will block on I/O until time %dms [Q <empty>]\n", t_run, srt_id_pcs_running_io, t_run + t_cs + srt_ptr_burst[j][1]);
+                            //printf("time %dms: Process %c switching out of CPU; will block on I/O until time %dms [Q <empty>]\n", t_run, srt_id_pcs_running_io, t_run + t_cs + srt_ptr_burst[j][1]);
 
                             break;
                             
@@ -556,16 +625,47 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
 
                         if (srt_ptr_burst[j][1] == 0 && finish_cpu_burst == true){
 
-                            printf("time %dms: Process %c (tau %dms) completed I/O; added to ready queue [Q A]\n",t_run,srt_ptr_pcs_running_io->id,srt_ptr_pcs_running_io->tau);
-                            
-
                             struct process *srt_ptr_pcs_current = srt_ptr_pcs_running_io;          
                             srt_ptr_pcs_cpu_queue[srt_num_pcs_cpu_queue] = srt_ptr_pcs_current;
                             srt_num_pcs_cpu_queue++;
                             
+                            
+
+
+
+                            // ===============================
+                            // formatted print the cpu queue:
+                            // ===============================
+                            if (srt_num_pcs_cpu_queue == 0){
+                                char cpu_queue[] = {'<','e','m','p','t','y','>','\0'};
+                                printf("time %dms: Process %c (tau %dms) completed I/O; added to ready queue [Q %s]\n",t_run,srt_ptr_pcs_running_io->id,srt_ptr_pcs_running_io->tau, cpu_queue);
+                            
+                            }
+                            else{
+                                char cpu_queue[srt_num_pcs_cpu_queue * 2];
+                                memset(cpu_queue, '\0', sizeof(cpu_queue));
+
+                                for (int j = 0; j < srt_num_pcs_cpu_queue; j++){
+                                    cpu_queue[j*2] = srt_ptr_pcs_cpu_queue[j]->id;
+                                    if (j > 0){
+                                        cpu_queue[j*2 - 1] = ' ';
+                                    }
+                                }
+                                printf("time %dms: Process %c (tau %dms) completed I/O; added to ready queue [Q %s]\n",t_run,srt_ptr_pcs_running_io->id,srt_ptr_pcs_running_io->tau, cpu_queue);
+                            
+                            }
+                            // ===============================
+                            // end of formatted print queue
+                            // ===============================
+
                             srt_ptr_pcs_running_io = NULL;
                             srt_id_pcs_running_io = '-';
                             
+                            
+                            //printf("time %dms: Process %c (tau %dms) completed I/O; added to ready queue [Q A]\n",t_run,srt_ptr_pcs_running_io->id,srt_ptr_pcs_running_io->tau);
+                            
+
+
 
                             // use the first one in queue as the next process for CPU burst
                             srt_ptr_pcs_running_cpu = srt_ptr_pcs_cpu_queue[0];
@@ -601,11 +701,37 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                             }
 
                             srt_ptr_pcs_running_cpu -> next_tau = tmp;
-
-                            printf("time %dms: Process %c (tau %dms) started using the CPU with %dms burst remaining [Q <empty>]\n", t_run, srt_ptr_pcs_running_cpu->id,srt_ptr_pcs_running_cpu->tau, tmp);
                             new_burst = false;
                             finish_cpu_burst = false;
 
+
+                            // ===============================
+                            // formatted print the cpu queue:
+                            // ===============================
+                            if (srt_num_pcs_cpu_queue == 0){
+                                char cpu_queue[] = {'<','e','m','p','t','y','>','\0'};
+                                printf("time %dms: Process %c (tau %dms) started using the CPU with %dms burst remaining [Q %s]\n", t_run, srt_ptr_pcs_running_cpu->id,srt_ptr_pcs_running_cpu->tau, tmp, cpu_queue);
+                            
+                            }
+                            else{
+                                char cpu_queue[srt_num_pcs_cpu_queue * 2];
+                                memset(cpu_queue, '\0', sizeof(cpu_queue));
+
+                                for (int j = 0; j < srt_num_pcs_cpu_queue; j++){
+                                    cpu_queue[j*2] = srt_ptr_pcs_cpu_queue[j]->id;
+                                    if (j > 0){
+                                        cpu_queue[j*2 - 1] = ' ';
+                                    }
+                                }
+                                printf("time %dms: Process %c (tau %dms) started using the CPU with %dms burst remaining [Q %s]\n", t_run, srt_ptr_pcs_running_cpu->id,srt_ptr_pcs_running_cpu->tau, tmp, cpu_queue);
+                            
+                            }
+                            // ===============================
+                            // end of formatted print queue
+                            // ===============================
+
+
+                            //printf("time %dms: Process %c (tau %dms) started using the CPU with %dms burst remaining [Q <empty>]\n", t_run, srt_ptr_pcs_running_cpu->id,srt_ptr_pcs_running_cpu->tau, tmp);
 
 
                             break;
@@ -619,53 +745,13 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
 
             }
 
-            //printf("one cpu burst finished, process %c is ready to go\n", srt_ptr_pcs_cpu_queue[srt_num_pcs_cpu_queue]->id);
-            /*
-            if (new_burst == true){
-
-                struct process *srt_ptr_pcs_current = srt_ptr_pcs_cpu_queue[0];
-                srt_ptr_pcs_running_cpu = srt_ptr_pcs_current;
-                srt_id_pcs_running_cpu = srt_ptr_pcs_current -> id;
-
-                for (int j = 0; j < num_of_proc; j++){
-                    if (srt_ptr_pcs_cpu_queue[j] -> id == srt_id_pcs_running_cpu){
-                        //remove this process in the queue
-                        for (int k = j; k < num_of_proc-1; k++){
-                            srt_ptr_pcs_cpu_queue[j] = srt_ptr_pcs_cpu_queue[j+1];
-                        }
-                        srt_num_pcs_cpu_queue--;
-                    }
-                }
-
-                t_cs = context_switch / 2;
-
-                //find the first available value in srt_ptr_pcs_running_cpu -> burst
-
-
-
-                printf("time %dms: Process %c (tau %dms) started using the CPU for %dms burst [Q <empty>]\n", t_run, srt_ptr_pcs_running_cpu->id,srt_ptr_pcs_running_cpu->tau ,srt_ptr_pcs_running_cpu->burst[0][0]);
-                new_burst = false;
-
-                break;
-                
-            
-            }
-
-            */
+ 
 
 
 
             srt_ptr_pcs++;
         
         }
-
-        /*
-        if (t_run == 2500){
-            finish = true;
-        }
-        */
-
-
 
 
 
@@ -679,16 +765,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
 
 
 
-
-
-
-
-
-
-
-
-
-// TODO: Free the dynamically allocated memory
+    // Free the dynamically allocated memory
 
     srt_ptr_pcs = srt_all_processes;
 
@@ -703,5 +780,4 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
 
     }
 
-    
 }
