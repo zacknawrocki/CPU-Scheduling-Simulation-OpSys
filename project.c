@@ -1177,3 +1177,32 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
     }
 
 }
+
+
+// Output for text file
+// Four possible integers for algorithm paramater
+// 0 = SJF
+// 1 = SRT
+// 2 = FCFS
+// 3 = RR
+void output_file(int algorithm, int avg_BT, int avg_WT, int avg_TAT, int context_switches, int preemptions) {
+    FILE * file;
+    file = fopen("simout.txt", "a");
+    char* algorithms[4] = {"SJF", "SRT", "FCFS", "RR"}; 
+    fprintf(file, "Algorithm %s\n", algorithms[algorithm]);
+    fprintf(file, "-- average CPU burst time: %.3d ms\n", avg_BT);
+    fprintf(file, "-- average CPU wait time: %.3d ms\n", avg_WT);
+    fprintf(file, "-- average CPU turnaround time: %.3d ms\n", avg_TAT);
+    fprintf(file, "-- total number of context switches: %d\n", context_switches);
+    fprintf(file, "-- total number of preemptions: %d\n", preemptions);
+}
+
+
+
+
+
+
+
+
+
+
