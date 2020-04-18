@@ -240,6 +240,7 @@ int main(int argc,char** argv)
     //reset the pointer point to the start of the all_process array
     ptr_pcs = all_processes;
     FCFS(ptr_pcs, num_of_proc, context_switch, alpha);
+    ptr_pcs = all_processes;
     SRT(ptr_pcs, num_of_proc, context_switch, alpha);
 
     //SJF();
@@ -419,15 +420,12 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
     struct process srt_all_processes[num_of_proc];
     struct process *srt_ptr_pcs = srt_all_processes;
 
-    
     for (int i = 0; i < num_of_proc; i++){
         srt_ptr_pcs -> id = ptr_pcs -> id;
         srt_ptr_pcs -> t_arrive = ptr_pcs -> t_arrive;
         srt_ptr_pcs -> num_cpu_burst = ptr_pcs -> num_cpu_burst;
         srt_ptr_pcs -> counter_cpu_burst = ptr_pcs -> counter_cpu_burst;
         
-        //printf("SRT each processes:\nid: %c\narrive time: %d\nnumber of bursts: %d\n",srt_ptr_pcs->id, srt_ptr_pcs->t_arrive, srt_ptr_pcs->num_cpu_burst);
-    
         printf("Process %c [NEW] (arrival time %d ms) %d CPU bursts\n", srt_ptr_pcs->id, srt_ptr_pcs->t_arrive, srt_ptr_pcs->counter_cpu_burst);
 
         int **srt_burst;
@@ -438,8 +436,6 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
             srt_burst[j] = calloc(2, sizeof(int));
             srt_burst[j][0] = ptr_pcs -> burst[j][0];
             srt_burst[j][1] = ptr_pcs -> burst[j][1];
-
-            //printf("SRT %d each burst - actual cpu burst: %d\n               actual io burst: %d\n", j+1, srt_burst[j][0], srt_burst[j][1]);
 
         }
 
@@ -503,7 +499,6 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
 
         }
         
-
         /* 
             for each millisecond in the simulator:
                 1. check if any of the process arrive
@@ -520,12 +515,12 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
         // at the start of each ms, srt_ptr_pcs points to the first process
         srt_ptr_pcs = srt_all_processes;
 
-        //context switch counter
+        // context switch counter
         if (t_cs > 0){
             t_cs --;
         }
         
-        // -- test print
+        // time test print
         //
         //printf("[TIME] t_run: %d, t_cs: %d, cpu burst: %c, io burst: %c, new burst: %d\n", t_run, t_cs, srt_id_pcs_running_cpu, srt_id_pcs_running_io, new_burst);
         //    
@@ -547,8 +542,6 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                 }
             }
             
-
-
             if (finish_process == true){
                 // this process is finished
                 num_finish_process++;
@@ -573,8 +566,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                 break;
             }
 
-            
-
+        
             /*
               If a process arrive at current time
               --  is there any running process?
@@ -635,7 +627,6 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                 }
 
 
-
                 /*
                 //once a process arrive, add to the queue first
                 struct process *srt_ptr_pcs_current = srt_ptr_pcs;
@@ -647,10 +638,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                 //a new burst is coming after the context_switch
                 new_burst = true;
                 */
-
-                
-                //printf("time %dms: Process %c (tau %dms) arrived; added to ready queue [Q %c]\n", t_run, srt_ptr_pcs->id, srt_ptr_pcs->tau, srt_ptr_pcs->id);
-                
+  
                 // ===============================
                 // formatted print the cpu queue:
                 // ===============================
@@ -684,6 +672,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                 continue;
             }
 
+
             /*
             if we have previously finished a cpu burst,
                 we are either doing nothing (running cpu id is '-')
@@ -711,7 +700,6 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                             srt_num_pcs_cpu_queue--;
                         }
                     }
-
 
                     //seems to be duplicate code, leave it here for now
                     struct process *srt_ptr_pcs_current = srt_ptr_pcs;
@@ -744,9 +732,6 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
 
                     printf("%d\n", finish_pcs);
 
-
-
-                    
                     if (finish_pcs == true){
 
                         // ===============================
@@ -773,9 +758,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                         // ===============================
                         // end of formatted print queue
                         // ===============================
-
-
-                        
+ 
                         // this process is finished
                         num_finish_process++;
                         //if there's only one process, just break simulator and end;
@@ -793,18 +776,13 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                         }
                         
 
-
-                        
-
                         break;
                     }
 
 
                     // if there's is more burst to go for this process
                     // tmp is calculated next cpu burst time
-                    srt_ptr_pcs_running_cpu -> next_tau = tmp;
-
-                    
+                    srt_ptr_pcs_running_cpu -> next_tau = tmp;                    
                     finish_cpu_burst = false;
                     new_burst = false;
 
@@ -881,7 +859,6 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                                     
                                 }
 
-
                                 //if finish cpu burst, move to io and perform context switch
                                 // need to check if io is occupied & if io queue is empty or not
 
@@ -909,8 +886,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                                         }
                                     }
 
-
-                                    
+  
                                     // ===============================
                                     // formatted print the cpu queue:
                                     // ===============================
@@ -968,20 +944,13 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                                     
                                 }
 
-
-
-                            
                             }
-
-
-                            
 
                         }
                         
                     }
 
                 }
-
 
                 
                 //do io burst here
@@ -998,7 +967,6 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                                 break;
                             }
 
-
                             //do io burst for the first available io
                             if (srt_ptr_burst[j][1] != 0){
                                 srt_ptr_burst[j][1]--;
@@ -1011,8 +979,6 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                                     break;
                                     
                                 }
-
-
 
                                 // a process finish both cpu burst and io burst
                                 // need to be added back to the cpu queue
@@ -1094,8 +1060,6 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                                     
                                     }
 
-
-
                                     //struct process *srt_ptr_pcs_current = srt_ptr_pcs_running_io;          
                                     //srt_ptr_pcs_cpu_queue[srt_num_pcs_cpu_queue] = srt_ptr_pcs_current;
                                     //srt_num_pcs_cpu_queue++;
@@ -1129,16 +1093,10 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                                     // ===============================
 
 
-
                                     srt_ptr_pcs_running_io = NULL;
                                     srt_id_pcs_running_io = '-';
                                     
-                                    printf("xxxxx\n");
-                                    
-                                    //printf("time %dms: Process %c (tau %dms) completed I/O; added to ready queue [Q A]\n",t_run,srt_ptr_pcs_running_io->id,srt_ptr_pcs_running_io->tau);
-                                    
-
-
+                                
                                     /*
                                     // use the first one in queue as the next process for CPU burst (done in previous code line 775-818)
                                     srt_ptr_pcs_running_cpu = srt_ptr_pcs_cpu_queue[0];
@@ -1159,8 +1117,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                                     t_cs = context_switch / 2;
                                     */
 
-                                    
-
+                                
 
                                     //printf("time %dms: Process %c (tau %dms) started using the CPU with %dms burst remaining [Q <empty>]\n", t_run, srt_ptr_pcs_running_cpu->id,srt_ptr_pcs_running_cpu->tau, tmp);
 
