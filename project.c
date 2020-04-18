@@ -274,27 +274,34 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
     struct process *fcfs_ptr_pcs = fcfs_all_processes;
 
     for (int i = 0; i < num_of_proc; i++) {
-        fcfs_ptr_pcs -> id = ptr_pcs -> id;
-        fcfs_ptr_pcs -> t_arrive = ptr_pcs -> t_arrive;
-        fcfs_ptr_pcs -> num_cpu_burst = ptr_pcs -> num_cpu_burst;
+    	fcfs_ptr_pcs->id = ptr_pcs->id;
+        fcfs_ptr_pcs->t_arrive = ptr_pcs->t_arrive;
+        fcfs_ptr_pcs->num_cpu_burst = ptr_pcs->num_cpu_burst;
         printf("Process %c [NEW] (arrival time %d ms) %d CPU bursts\n", fcfs_ptr_pcs->id, fcfs_ptr_pcs->t_arrive, fcfs_ptr_pcs->num_cpu_burst);
         int **fcfs_burst;
         fcfs_burst = calloc(fcfs_ptr_pcs -> num_cpu_burst, sizeof(int *));
-
         for (int j = 0; j < fcfs_ptr_pcs -> num_cpu_burst; j++) {
             fcfs_burst[j] = calloc(2, sizeof(int));
             fcfs_burst[j][0] = ptr_pcs -> burst[j][0];
             fcfs_burst[j][1] = ptr_pcs -> burst[j][1];
         }
-
         fcfs_ptr_pcs -> burst = fcfs_burst;
+        fcfs_ptr_pcs++;
+        ptr_pcs++;
     }
-    //put fcfs_ptr_pcs at the head of fcfs_all_processes
     fcfs_ptr_pcs = fcfs_all_processes;
+    struct process *queue[num_of_proc];
+    for (int i = 0; i < num_of_proc; i++) {
+    	queue[i] = fcfs_ptr_pcs;
+    	fcfs_ptr_pcs++;
+    }
+
+
+
+    // Setup for FCFS Simulation
     int time = 0;
     int wait_times[num_of_proc];
     int turn_around_times[num_of_proc];
-    struct process queue[num_of_proc];
     int burst_time = 0;
     int curr_index = 0;
     int newest_index = 0;
@@ -304,15 +311,16 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
     // FCFS Simulation
     while(1) {
     	// Check if something can arrive to queue at this given time
+        fcfs_ptr_pcs = fcfs_all_processes;
     	for (int i = 0; i < num_of_proc; i++) {
-    		if (fcfs_ptr_pcs[i]->t_arrive == time) {
+    		if (fcfs_ptr_pcs->t_arrive == time) {
     			// Add to queue
-    			fcfs_ptr_pcs[i]->wait_time = time;
-    			queue[i] = newest_index;
+    			fcfs_ptr_pcs->WT = time;
+    			queue[newest_index] = fcfs_ptr_pcs;
     			newest_index += 1;
 
     			// Print that you have added to queue
-    			printf("time %dms: Process %c arrived; added to ready queue [Q ", time, fcfs_ptr_pcs[i]->id);
+    			printf("time %dms: Process %c arrived; added to ready queue [Q ", time, fcfs_ptr_pcs->id);
     			  // If queue is now empty, after starting new process
     			if (curr_index == newest_index) {
     				printf("<empty>]");
@@ -327,7 +335,9 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
     				printf("]\n");
     			} 
     		}
+            fcfs_ptr_pcs++;
         }
+
 
         // If the current process is done, a new process is started and the queue is updated
         if (burst_time <= 0) {
@@ -336,14 +346,18 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
         		printf("time %dms: Simulator ended for FCFS [Q <empty>]", time);
         		break;
         	}
+        	// Iterate to next time if nothing is in the queue
+        	if (curr_index == newest_index) {
+        		continue;
+        	}
 
         	// Simulate "popping a queue" by iterating to next index
         	curr_index += 1;
         	burst_time = queue[curr_index]->num_cpu_burst;
         	// Store the current process' wait time, to find the average later
-        	wait_times[curr_index] = time - queue[curr_index]->wait_time;
+        	wait_times[curr_index] = time - queue[curr_index]->WT;
         	// Store the previous process' turn around time, to find the average later
-        	turn_around_times[curr_index - 1] = time - queue[curr_index - 1]->wait_time
+        	turn_around_times[curr_index - 1] = time - queue[curr_index - 1]->WT;
 
         	// Print the old process has terminated
         	printf("time %dms: Process %c terminated [Q ", time, queue[curr_index - 1]->id);
@@ -377,16 +391,19 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
     			printf("]\n");
     		} 
         }
-
     	time++;
     	burst_time--;
 	}
 
 	// Deallocate FCFS memory
+    fcfs_ptr_pcs = fcfs_all_processes;
 	for (int i = 0; i < num_of_proc; i++) {
+        for (int j=0; j < fcfs_ptr_pcs->num_cpu_burst; j++){
+            free(fcfs_ptr_pcs->burst[j]);
+        }
         free(fcfs_ptr_pcs->burst);
+        fcfs_ptr_pcs++;
     }
-    free(fcfs_ptr_pcs);
 }
 
 
