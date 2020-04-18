@@ -85,7 +85,7 @@ int main(int argc,char** argv)
     char *begin_or_end = "END";
     begin_or_end = argv[8];
 
-    if ( !(begin_or_end == "BEGINNING" || begin_or_end == "END" || begin_or_end == NULL) ){
+    if (strcmp(begin_or_end, "BEGINNING") == 0 || strcmp(begin_or_end, "END") == 0 || strcmp(begin_or_end, NULL) == 0) {
         fprintf(stderr, "invalid begin_or_end: %s\n.", begin_or_end);
         return EXIT_FAILURE;
     }
