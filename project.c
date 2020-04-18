@@ -27,7 +27,7 @@ int main(int argc,char** argv)
         fprintf(stderr, "not enough input arguments\n.");
         return EXIT_FAILURE;
     }
-    else if (argc > 8){
+    else if (argc > 9){
         fprintf(stderr, "too many input arguments\n.");
         return EXIT_FAILURE;
     }
@@ -82,14 +82,15 @@ int main(int argc,char** argv)
     */
     int time_slice = atoi(argv[7]);
     
+    /*
     char *begin_or_end = "END";
     begin_or_end = argv[8];
-
+    
     if (strcmp(begin_or_end, "BEGINNING") == 0 || strcmp(begin_or_end, "END") == 0 || strcmp(begin_or_end, NULL) == 0) {
         fprintf(stderr, "invalid begin_or_end: %s\n.", begin_or_end);
         return EXIT_FAILURE;
     }
-
+    */
 
 
     // ==== finish parcing the input parameters ====
