@@ -238,11 +238,11 @@ int main(int argc,char** argv)
     //============================================  
     
     //reset the pointer point to the start of the all_process array
-    //ptr_pcs = all_processes;
-    //FCFS(ptr_pcs, num_of_proc, context_switch, alpha);
-    
     ptr_pcs = all_processes;
-    SRT(ptr_pcs, num_of_proc, context_switch, alpha);
+    FCFS(ptr_pcs, num_of_proc, context_switch, alpha);
+    
+    //ptr_pcs = all_processes;
+    //SRT(ptr_pcs, num_of_proc, context_switch, alpha);
 
     //SJF();
 
