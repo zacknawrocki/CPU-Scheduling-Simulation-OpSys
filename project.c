@@ -22,6 +22,7 @@ struct process{
 
 void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
 void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
+void RR(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
 void output_file(int algorithm, int avg_BT, int avg_WT, int avg_TAT, int context_switches, int preemptions);
 
 int main(int argc,char** argv) 
@@ -317,7 +318,7 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
     int avg_BT = 0;
     int avg_WT = 0;
     int avg_TAT = 0;
-    printf("time 0ms: Simulator started for FCFS [Q <empty>]");
+    printf("time 0ms: Simulator started for FCFS [Q <empty>]\n");
 
 
     // FCFS Simulation
@@ -336,7 +337,7 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
     			printf("time %dms: Process %c arrived; added to ready queue [Q ", time, fcfs_ptr_pcs->id);
     			  // If queue is now empty, after starting new process
     			if (curr_index == newest_index) {
-    				printf("<empty>]");
+    				printf("<empty>]\n");
     			} else {
     				for (int j = curr_index; j < newest_index; j++) {
     					if (j != newest_index - 1) {
@@ -351,16 +352,16 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
             fcfs_ptr_pcs++;
         }
 
-
         // If the current process is done, a new process is started and the queue is updated
-        if (burst_time <= 0) {
+        if (burst_time <= 0 && newest_index > 0) {
         	// Every process has been taken care of -- done with FCFS simulation
-        	if (curr_index == num_of_proc - 1) {
-        		printf("time %dms: Simulator ended for FCFS [Q <empty>]", time);
+        	if (curr_index == num_of_proc) {
+        		printf("time %dms: Simulator ended for FCFS [Q <empty>]\n", time);
         		break;
         	}
         	// Iterate to next time if nothing is in the queue
         	if (curr_index == newest_index) {
+                time += 1;
         		continue;
         	}
 
@@ -375,8 +376,8 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
         	// Print the old process has terminated
         	printf("time %dms: Process %c terminated [Q ", time, queue[curr_index - 1]->id);
         	// If queue is now empty, after starting new process
-        	if (curr_index - 1 == newest_index) {
-        		printf("<empty>]");
+        	if (curr_index == newest_index) {
+        		printf("<empty>]\n");
         	} else {
     			for (int j = curr_index; j < newest_index; j++) {
     				if (j != newest_index - 1) {
@@ -392,7 +393,7 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
         	printf("time %dms: Process %c started using the CPU for %dms burst [Q ", time, queue[curr_index]->id, queue[curr_index]->num_cpu_burst);
         	// If queue is now empty, after starting new process
         	if (curr_index == newest_index) {
-        		printf("<empty>]");
+        		printf("<empty>]\n");
         	} else {
     			for (int j = curr_index; j < newest_index; j++) {
     				if (j != newest_index - 1) {
@@ -413,7 +414,8 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
         avg_BT += bursts[i];
         avg_WT += wait_times[i];
         avg_TAT += turn_around_times[i]; 
-    } 
+    }
+    printf("\n"); 
     output_file(2, avg_BT / num_of_proc, avg_WT / num_of_proc, avg_TAT / num_of_proc, context_switches, 0);
 
 	// Deallocate FCFS memory
@@ -1188,9 +1190,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
         free(srt_ptr_pcs->burst);
 
         srt_ptr_pcs++;
-
     }
-
 }
 
 
