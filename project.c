@@ -120,14 +120,14 @@ int main(int argc,char** argv)
         // assign the id for process
         ptr_pcs -> id = ID_list[i];
 
-
+        valid = false;
         while (valid == false){
             t_arrive =  floor( -log( drand48() ) / lambda );
             if (t_arrive < tail){
                 valid = true;
             }
         }
-        // printf("initial process arrival time: %f\n", t_arrive);
+        printf("process %c arrival time: %f\n", ptr_pcs ->id, t_arrive);
 
         ptr_pcs -> t_arrive = t_arrive;
 
@@ -138,7 +138,7 @@ int main(int argc,char** argv)
                 valid = true;
             }
         }
-        // printf("number of CPU burmemset(array, -1, sizeof(array[0][0]) * row * count)sts: %d\n", num_CPU_burst);
+        //printf("process %c number of CPU bursts: %d\n", ptr_pcs->id, num_CPU_burst);
 
         ptr_pcs -> num_cpu_burst = num_CPU_burst;
         ptr_pcs -> counter_cpu_burst = num_CPU_burst;
@@ -163,7 +163,7 @@ int main(int argc,char** argv)
                         valid = true;
                     }
                 }
-                // printf("%d (last) actual CPU burst %d\n",i+1, t_CPU_burst);
+                //printf("process %c %d (last) actual CPU burst %d\n", ptr_pcs->id, i+1, t_CPU_burst);
                 
                 burst[i][0] = t_CPU_burst;
                 burst[i][1] = -1;
@@ -186,7 +186,7 @@ int main(int argc,char** argv)
                         valid = true;
                     }
                 }
-                // printf("%d actual CPU burst %d, actual IO busrt %d\n", i+1, t_CPU_burst, t_IO_burst);
+                //printf("process %c %d actual CPU burst %d, actual IO busrt %d\n", ptr_pcs->id, i+1, t_CPU_burst, t_IO_burst);
 
                 burst[i][0] = t_CPU_burst;
                 burst[i][1] = t_IO_burst;
@@ -240,8 +240,9 @@ int main(int argc,char** argv)
     //============================================  
     
     //reset the pointer point to the start of the all_process array
-    ptr_pcs = all_processes;
-    FCFS(ptr_pcs, num_of_proc, context_switch, alpha);
+    //ptr_pcs = all_processes;
+    //FCFS(ptr_pcs, num_of_proc, context_switch, alpha);
+    
     ptr_pcs = all_processes;
     SRT(ptr_pcs, num_of_proc, context_switch, alpha);
 
@@ -539,7 +540,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
         
         // time test print
         //
-        //printf("[TIME] t_run: %d, t_cs: %d, cpu burst: %c, io burst: %c, new burst: %d\n", t_run, t_cs, srt_id_pcs_running_cpu, srt_id_pcs_running_io, new_burst);
+        printf("[TIME] t_run: %d, t_cs: %d, cpu burst: %c, io burst: %c, new burst: %d\n", t_run, t_cs, srt_id_pcs_running_cpu, srt_id_pcs_running_io, new_burst);
         //    
 
         for (int i = 0; i < num_of_proc; i++){
