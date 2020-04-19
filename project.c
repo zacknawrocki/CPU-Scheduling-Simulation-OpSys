@@ -22,6 +22,7 @@ struct process{
 
 void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
 void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
+void output_file(int algorithm, int avg_BT, int avg_WT, int avg_TAT, int context_switches, int preemptions);
 
 int main(int argc,char** argv) 
 { 
@@ -308,9 +309,14 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
     int time = 0;
     int wait_times[num_of_proc];
     int turn_around_times[num_of_proc];
+    int bursts[num_of_proc];
     int burst_time = 0;
     int curr_index = 0;
     int newest_index = 0;
+    int context_switches = 0;
+    int avg_BT = 0;
+    int avg_WT = 0;
+    int avg_TAT = 0;
     printf("time 0ms: Simulator started for FCFS [Q <empty>]");
 
 
@@ -323,6 +329,7 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
     			// Add to queue
     			fcfs_ptr_pcs->WT = time;
     			queue[newest_index] = fcfs_ptr_pcs;
+                bursts[newest_index] = fcfs_ptr_pcs->num_cpu_burst; 
     			newest_index += 1;
 
     			// Print that you have added to queue
@@ -400,6 +407,14 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
     	time++;
     	burst_time--;
 	}
+
+    // Calculate averages and output in simout.txt
+    for (int i = 0; i < num_of_proc; i++) {
+        avg_BT += bursts[i];
+        avg_WT += wait_times[i];
+        avg_TAT += turn_around_times[i]; 
+    } 
+    output_file(2, avg_BT / num_of_proc, avg_WT / num_of_proc, avg_TAT / num_of_proc, context_switches, 0);
 
 	// Deallocate FCFS memory
     fcfs_ptr_pcs = fcfs_all_processes;
