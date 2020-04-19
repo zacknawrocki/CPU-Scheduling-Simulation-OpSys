@@ -87,18 +87,16 @@ int main(int argc,char** argv)
     */
     int time_slice = atoi(argv[7]);
     
-    // ===========NEED FIX================
-    // this code causes segmentation fault
-    // ===================================
-    /*
+    
     char *begin_or_end = "END";
     begin_or_end = argv[8];
-    
-    if (strcmp(begin_or_end, "BEGINNING") == 0 || strcmp(begin_or_end, "END") == 0 || strcmp(begin_or_end, NULL) == 0) {
-        fprintf(stderr, "invalid begin_or_end: %s\n.", begin_or_end);
-        return EXIT_FAILURE;
-    }
-    */
+    printf("%s\n", begin_or_end);
+    if (argc == 9) {
+        if (!(strcmp(begin_or_end, "BEGINNING") == 0 || strcmp(begin_or_end, "END") == 0)) {
+            fprintf(stderr, "invalid begin_or_end: %s\n.", begin_or_end);
+            return EXIT_FAILURE;
+        }
+    }   
 
 
     // ==== finish parcing the input parameters ====
@@ -484,7 +482,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
     int **srt_ptr_tmp;
 
     int srt_num_pcs_cpu_queue = 0;
-    int srt_num_pcs_io_queue = 0;
+    //int srt_num_pcs_io_queue = 0;
 
     struct process *srt_ptr_pcs_running_cpu;
     struct process *srt_ptr_pcs_running_io;
@@ -495,10 +493,10 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
     int t_cs = 0;
 
     bool finish = false;
-    bool finish_cpu_burst = false;
+    //bool finish_cpu_burst = false;
     bool new_burst = false;
     bool finish_process = false;
-    bool finish_srt;
+    //bool finish_srt;
 
     int num_finish_process = 0;
     int srt_tau;
@@ -800,7 +798,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                     // if there's is more burst to go for this process
                     // tmp is calculated next cpu burst time
                     srt_ptr_pcs_running_cpu -> next_tau = tmp;                    
-                    finish_cpu_burst = false;
+                    //finish_cpu_burst = false;
                     new_burst = false;
 
 
@@ -1190,6 +1188,81 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
         free(srt_ptr_pcs->burst);
 
         srt_ptr_pcs++;
+    }
+}
+
+void RR(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha) {
+
+    // Dynamically allocate again, so the original data is not modified
+    struct process rr_all_processes[num_of_proc];
+    struct process *rr_ptr_pcs = rr_all_processes;
+
+    for (int i = 0; i < num_of_proc; i++) {
+        rr_ptr_pcs->id = ptr_pcs->id;
+        rr_ptr_pcs->t_arrive = ptr_pcs->t_arrive;
+        rr_ptr_pcs->num_cpu_burst = ptr_pcs->num_cpu_burst;
+        printf("Process %c [NEW] (arrival time %d ms) %d CPU bursts\n", rr_ptr_pcs->id, rr_ptr_pcs->t_arrive, rr_ptr_pcs->num_cpu_burst);
+        int **rr_burst;
+        rr_burst = calloc(rr_ptr_pcs -> num_cpu_burst, sizeof(int *));
+        for (int j = 0; j < rr_ptr_pcs -> num_cpu_burst; j++) {
+            rr_burst[j] = calloc(2, sizeof(int));
+            rr_burst[j][0] = ptr_pcs -> burst[j][0];
+            rr_burst[j][1] = ptr_pcs -> burst[j][1];
+        }
+        rr_ptr_pcs -> burst = rr_burst;
+        rr_ptr_pcs++;
+        ptr_pcs++;
+    }
+    rr_ptr_pcs = rr_all_processes;
+    struct process *queue[num_of_proc];
+    for (int i = 0; i < num_of_proc; i++) {
+        queue[i] = rr_ptr_pcs;
+        rr_ptr_pcs++;
+    }
+
+
+
+    // Setup for RR Simulation
+    int time = 0;
+    int wait_times[num_of_proc];
+    int turn_around_times[num_of_proc];
+    int bursts[num_of_proc];
+    int burst_time = 0;
+    int curr_index = 0;
+    int newest_index = 0;
+    int context_switches = 0;
+    int avg_BT = 0;
+    int avg_WT = 0;
+    int avg_TAT = 0;
+    printf("time 0ms: Simulator started for RR [Q <empty>]\n");
+
+
+    // RR Simulation
+   
+
+
+
+
+
+
+
+    // Calculate averages and output in simout.txt
+    for (int i = 0; i < num_of_proc; i++) {
+        avg_BT += bursts[i];
+        avg_WT += wait_times[i];
+        avg_TAT += turn_around_times[i]; 
+    }
+    printf("\n"); 
+    output_file(2, avg_BT / num_of_proc, avg_WT / num_of_proc, avg_TAT / num_of_proc, context_switches, 0);
+
+    // Deallocate RR memory
+    rr_ptr_pcs = rr_all_processes;
+    for (int i = 0; i < num_of_proc; i++) {
+        for (int j=0; j < rr_ptr_pcs->num_cpu_burst; j++){
+            free(rr_ptr_pcs->burst[j]);
+        }
+        free(rr_ptr_pcs->burst);
+        rr_ptr_pcs++;
     }
 }
 
