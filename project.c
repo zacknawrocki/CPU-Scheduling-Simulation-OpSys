@@ -238,11 +238,11 @@ int main(int argc,char** argv)
     //============================================  
     
     //reset the pointer point to the start of the all_process array
-    ptr_pcs = all_processes;
-    FCFS(ptr_pcs, num_of_proc, context_switch, alpha);
-    
     //ptr_pcs = all_processes;
-    //SRT(ptr_pcs, num_of_proc, context_switch, alpha);
+    //FCFS(ptr_pcs, num_of_proc, context_switch, alpha);
+    
+    ptr_pcs = all_processes;
+    SRT(ptr_pcs, num_of_proc, context_switch, alpha);
 
     //SJF();
 
@@ -1292,7 +1292,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                                         if (srt_ptr_burst[j][1] == -1){
 
                                             t_cs = context_switch / 2;
-                                            srt_output_total_context_switch += 1;
+                                            
                                             finish_process = true;
 
                                             break;
