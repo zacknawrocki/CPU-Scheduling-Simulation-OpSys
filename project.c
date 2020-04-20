@@ -20,9 +20,9 @@ struct process{
 } pcs;
 
 
-void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
+//void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
 void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
-void RR(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
+//void RR(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
 void output_file(int algorithm, int avg_BT, int avg_WT, int avg_TAT, int context_switches, int preemptions);
 
 int main(int argc,char** argv) 
@@ -87,16 +87,16 @@ int main(int argc,char** argv)
     */
     int time_slice = atoi(argv[7]);
     
-    
+    /*
     char *begin_or_end = "END";
     begin_or_end = argv[8];
-    printf("%s\n", begin_or_end);
     if (argc == 9) {
         if (!(strcmp(begin_or_end, "BEGINNING") == 0 || strcmp(begin_or_end, "END") == 0)) {
             fprintf(stderr, "invalid begin_or_end: %s\n.", begin_or_end);
             return EXIT_FAILURE;
         }
-    }   
+    }
+    */   
 
 
     // ==== finish parcing the input parameters ====
@@ -125,13 +125,13 @@ int main(int argc,char** argv)
                 valid = true;
             }
         }
-        printf("process %c arrival time: %f\n", ptr_pcs ->id, t_arrive);
+        //printf("process %c arrival time: %f\n", ptr_pcs ->id, t_arrive);
 
         ptr_pcs -> t_arrive = t_arrive;
 
         valid = false;
         while (valid == false){
-            num_CPU_burst = (int) (-log( drand48() ) / lambda * 100) + 1;
+            num_CPU_burst = (int) (( drand48() ) * 100) + 1;
             if (num_CPU_burst < tail){
                 valid = true;
             }
@@ -312,7 +312,7 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
     int bursts[num_of_proc];
     int burst_time = 0;
     int curr_index = 0;
-    int newest_index = 0;
+    int newest_index = -1;
     int context_switches = 0;
     int avg_BT = 0;
     int avg_WT = 0;
@@ -327,6 +327,9 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
     	for (int i = 0; i < num_of_proc; i++) {
     		if (fcfs_ptr_pcs->t_arrive == time) {
     			// Add to queue
+                if (newest_index == -1) {
+                    newest_index = 0;
+                }
     			fcfs_ptr_pcs->WT = time;
     			queue[newest_index] = fcfs_ptr_pcs;
                 bursts[newest_index] = fcfs_ptr_pcs->num_cpu_burst; 
@@ -352,7 +355,24 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
         }
 
         // If the current process is done, a new process is started and the queue is updated
-        if (burst_time <= 0 && newest_index > 0) {
+        if (burst_time <= 0 && newest_index != -1) {
+            if (curr_index > 0 && burst_time == 0) {
+                // Print the old process has terminated
+                printf("time %dms: Process %c terminated [Q ", time, queue[curr_index - 1]->id);
+                // If queue is now empty, after starting new process
+                if (curr_index == newest_index) {
+                    printf("<empty>]\n");
+                } else {
+                    for (int j = curr_index; j < newest_index; j++) {
+                        if (j != newest_index - 1) {
+                            printf("%c ", queue[j]->id);
+                        } else {
+                            printf("%c", queue[j]->id);
+                        }
+                    }
+                    printf("]\n");
+                }
+            }
         	// Every process has been taken care of -- done with FCFS simulation
         	if (curr_index == num_of_proc) {
         		printf("time %dms: Simulator ended for FCFS [Q <empty>]\n", time);
@@ -361,48 +381,35 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
         	// Iterate to next time if nothing is in the queue
         	if (curr_index == newest_index) {
                 time += 1;
+                burst_time -= 1;
         		continue;
         	}
-
         	// Simulate "popping a queue" by iterating to next index
         	curr_index += 1;
-        	burst_time = queue[curr_index]->num_cpu_burst;
+        	burst_time = queue[curr_index - 1]->num_cpu_burst;
         	// Store the current process' wait time, to find the average later
-        	wait_times[curr_index] = time - queue[curr_index]->WT;
+        	wait_times[curr_index - 1] = time - queue[curr_index - 1]->WT;
         	// Store the previous process' turn around time, to find the average later
         	turn_around_times[curr_index - 1] = time - queue[curr_index - 1]->WT;
 
-        	// Print the old process has terminated
-        	printf("time %dms: Process %c terminated [Q ", time, queue[curr_index - 1]->id);
-        	// If queue is now empty, after starting new process
-        	if (curr_index == newest_index) {
-        		printf("<empty>]\n");
-        	} else {
-    			for (int j = curr_index; j < newest_index; j++) {
-    				if (j != newest_index - 1) {
-    					printf("%c ", queue[j]->id);
-    				} else {
-    					printf("%c", queue[j]->id);
-    				}
-    			}
-    			printf("]\n");
-    		} 
 
         	// Print that new process is using CPU
-        	printf("time %dms: Process %c started using the CPU for %dms burst [Q ", time, queue[curr_index]->id, queue[curr_index]->num_cpu_burst);
-        	// If queue is now empty, after starting new process
-        	if (curr_index == newest_index) {
-        		printf("<empty>]\n");
-        	} else {
-    			for (int j = curr_index; j < newest_index; j++) {
-    				if (j != newest_index - 1) {
-    					printf("%c ", queue[j]->id);
-    				} else {
-    					printf("%c", queue[j]->id);
-    				}
-    			}
-    			printf("]\n");
-    		} 
+            if (curr_index <= newest_index) {
+                printf("time %dms: Process %c started using the CPU for %dms burst [Q ", time, queue[curr_index - 1]->id, queue[curr_index - 1]->num_cpu_burst);
+                // If queue is now empty, after starting new process
+                if (curr_index == newest_index) {
+                    printf("<empty>]\n");
+                } else {
+                    for (int j = curr_index; j < newest_index; j++) {
+                        if (j != newest_index - 1) {
+                            printf("%c ", queue[j]->id);
+                        } else {
+                            printf("%c", queue[j]->id);
+                        }
+                    }
+                    printf("]\n");
+                }
+            } 
         }
     	time++;
     	burst_time--;
