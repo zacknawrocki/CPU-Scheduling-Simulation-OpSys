@@ -85,7 +85,7 @@ int main(int argc,char** argv)
     seventh input argument is the t_slice for time slice in RR in milliseconds
     eighth input argument is rr_add the flag for whether processes are added to the end or beginning of the ready queue
     */
-    int time_slice = atoi(argv[7]);
+    //int time_slice = atoi(argv[7]);
     
     /*
     char *begin_or_end = "END";
@@ -394,6 +394,7 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
         	// Store the previous process' turn around time, to find the average later
         	turn_around_times[curr_index - 1] = time - queue[curr_index - 1]->WT;
 
+            time += context_switch / 2;
 
         	// Print that new process is using CPU
             if (curr_index <= newest_index) {
@@ -442,7 +443,7 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
 void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha){
 
     // variables for output file
-    int srt_output_avg_cpu_burst_time = 0;
+    //int srt_output_avg_cpu_burst_time = 0;
     int srt_output_total_cpu_burst_time = 0;
     int srt_output_num_cpu_burst = 0;
     int srt_output_total_turnaround_time = 0;
@@ -454,7 +455,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
 
     struct process srt_all_processes[num_of_proc];
     struct process *srt_ptr_pcs = srt_all_processes;
-    struct process *srt_ptr_pcs_free = srt_all_processes;
+    //struct process *srt_ptr_pcs_free = srt_all_processes;
 
     for (int i = 0; i < num_of_proc; i++){
         srt_ptr_pcs -> id = ptr_pcs -> id;
@@ -489,7 +490,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
         ptr_pcs++;
     }
 
-    srt_output_avg_cpu_burst_time = srt_output_total_cpu_burst_time / srt_output_num_cpu_burst;
+    //srt_output_avg_cpu_burst_time = srt_output_total_cpu_burst_time / srt_output_num_cpu_burst;
 
     
 
@@ -1770,14 +1771,15 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
     // =================
     
     // output file calculations
-    printf("-- average cpu burst time: %d\n", srt_output_avg_cpu_burst_time);
-    printf("-- avreage waite time: %d\n", ((srt_output_total_turnaround_time - srt_output_total_cpu_burst_time) / num_of_proc) );
-    printf("-- average turnaround time: %d\n", srt_output_total_turnaround_time/num_of_proc);
-    printf("-- total number of context switches: %d\n", srt_output_total_context_switch);
-    printf("-- total number of preemptions: %d\n", srt_output_total_preemption);
+    //printf("-- average cpu burst time: %d\n", srt_output_avg_cpu_burst_time);
+    //printf("-- avreage waite time: %d\n", ((srt_output_total_turnaround_time - srt_output_total_cpu_burst_time) / num_of_proc) );
+    //printf("-- average turnaround time: %d\n", srt_output_total_turnaround_time/num_of_proc);
+    //printf("-- total number of context switches: %d\n", srt_output_total_context_switch);
+    //printf("-- total number of preemptions: %d\n", srt_output_total_preemption);
 
 }
 
+/*
 void RR(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha) {
 
     // Dynamically allocate again, so the original data is not modified
@@ -1852,7 +1854,7 @@ void RR(struct process *ptr_pcs, int num_of_proc, int context_switch, double alp
         rr_ptr_pcs++;
     }
 }
-
+*/
 
 // Output for text file
 // Four possible integers for algorithm paramater
