@@ -244,8 +244,10 @@ int main(int argc,char** argv)
     ptr_pcs = all_processes;
     SRT(ptr_pcs, num_of_proc, context_switch, alpha);
 
+    ptr_pcs = all_processes;
     //SJF();
 
+    ptr_pcs = all_processes;
     //RR();
 
     
