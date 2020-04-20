@@ -20,9 +20,9 @@ struct process{
 } pcs;
 
 
-//void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
+void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
 void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
-//void RR(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
+void RR(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
 void output_file(int algorithm, int avg_BT, int avg_WT, int avg_TAT, int context_switches, int preemptions);
 
 int main(int argc,char** argv) 
@@ -90,15 +90,15 @@ int main(int argc,char** argv)
     /*
     char *begin_or_end = "END";
     begin_or_end = argv[8];
+    printf("%s\n", begin_or_end);
     if (argc == 9) {
         if (!(strcmp(begin_or_end, "BEGINNING") == 0 || strcmp(begin_or_end, "END") == 0)) {
             fprintf(stderr, "invalid begin_or_end: %s\n.", begin_or_end);
             return EXIT_FAILURE;
         }
     }
-    */   
-
-
+    */
+    
     // ==== finish parcing the input parameters ====
     // start the random number generator
     // =============================================
