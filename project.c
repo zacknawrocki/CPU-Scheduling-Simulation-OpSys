@@ -6,22 +6,74 @@
 #include <stdbool.h> 
 #include <string.h>
 
-struct process{
-	char id; 
-	int t_arrive; 
-	int num_cpu_burst; 
+typedef struct process{
+    char id; 
+    int t_arrive; 
+    int num_cpu_burst; 
     int counter_cpu_burst;
-	int **burst; 
+    int **burst; 
     int tau;
     int next_tau;  //SRT need it to calculate tau
-	int preemptions;
-	int TAT;
-	int WT;
-} pcs;
+    int preemptions;
+    int TAT;
+    int WT;
+} process;
+
+typedef struct queue {
+    int capacity;
+    int start_idx;
+    int end_idx;
+    process **items;
+} queue;
+
+typedef struct {
+    int num_procs;
+    process **procs;
+    int t_cx;
+    queue *q;
+    int preemptions;
+    double alpha;
+    int time_slice;
+    int rr_fcfs;
+} settings;
+
+queue *queue_open() {
+    queue *q = malloc(sizeof(queue));
+    memset(q, 0, sizeof(queue));
+    q->capacity = 26;
+    q->items = calloc(sizeof(process*), q->capacity);
+}
+
+void queue_close(queue *q) {
+    free(q->items);
+    free(q);
+}
+
+void queue_push(queue *q, process *proc) {
+    q->end_idx = (q->end_idx + q->capacity + 1) % q->capacity;
+    q->items[q->end_idx] = proc;
+}
+
+process *queue_pop(queue *q) {
+    if (q->start_idx == q->end_idx) return NULL;
+    process *result = q->items[q->start_idx];
+    q->items[q->start_idx] = NULL;
+    q->start_idx = (q->start_idx + q->capacity + 1) % q->capacity;
+    return result;
+}
+
+int queue_length(queue *q) {
+    if (q->end_idx > q->start_idx) {
+        return q->end_idx - q->start_idx;
+    } else {
+        return q->end_idx + (q->capacity - q->start_idx);
+    }
+}
 
 
 void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
-void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
+void FCFS(const settings *config_tmpl);
+//void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
 void RR(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
 void output_file(int algorithm, int avg_BT, int avg_WT, int avg_TAT, int context_switches, int preemptions);
 
@@ -38,7 +90,7 @@ int main(int argc,char** argv)
     }
 
     /* 
-    first input argument is the see for random number generator
+    first input argument is the seed for random number generator
         use srand48() before each scheduling algorithm
         use drand48() obtain the next value in range[0.0, 1.0)
     */
@@ -116,7 +168,7 @@ int main(int argc,char** argv)
     // iterative through each process to generate and store the data
     for (int i = 0; i < num_of_proc; i++){
         // assign the id for process
-        ptr_pcs -> id = ID_list[i];
+        ptr_pcs->id = ID_list[i];
 
         valid = false;
         while (valid == false){
@@ -127,7 +179,7 @@ int main(int argc,char** argv)
         }
         //printf("process %c arrival time: %f\n", ptr_pcs ->id, t_arrive);
 
-        ptr_pcs -> t_arrive = t_arrive;
+        ptr_pcs->t_arrive = t_arrive;
 
         valid = false;
         while (valid == false){
@@ -138,8 +190,8 @@ int main(int argc,char** argv)
         }
         //printf("process %c number of CPU bursts: %d\n", ptr_pcs->id, num_CPU_burst);
 
-        ptr_pcs -> num_cpu_burst = num_CPU_burst;
-        ptr_pcs -> counter_cpu_burst = num_CPU_burst;
+        ptr_pcs->num_cpu_burst = num_CPU_burst;
+        ptr_pcs->counter_cpu_burst = num_CPU_burst;
 
         //burst store all the bursts' information
 
@@ -194,7 +246,7 @@ int main(int argc,char** argv)
         }
 
 
-        ptr_pcs -> burst = burst;
+        ptr_pcs->burst = burst;
 
         //move to the next process
         ptr_pcs++;
@@ -276,37 +328,60 @@ int main(int argc,char** argv)
     return 0;
 }
 
-void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha) {
-
-    // Dynamically allocate again, so the original data is not modified
-    struct process fcfs_all_processes[num_of_proc];
-    struct process *fcfs_ptr_pcs = fcfs_all_processes;
-
-    for (int i = 0; i < num_of_proc; i++) {
-    	fcfs_ptr_pcs->id = ptr_pcs->id;
-        fcfs_ptr_pcs->t_arrive = ptr_pcs->t_arrive;
-        fcfs_ptr_pcs->num_cpu_burst = ptr_pcs->num_cpu_burst;
-        printf("Process %c [NEW] (arrival time %d ms) %d CPU bursts\n", fcfs_ptr_pcs->id, fcfs_ptr_pcs->t_arrive, fcfs_ptr_pcs->num_cpu_burst);
-        int **fcfs_burst;
-        fcfs_burst = calloc(fcfs_ptr_pcs -> num_cpu_burst, sizeof(int *));
-        for (int j = 0; j < fcfs_ptr_pcs -> num_cpu_burst; j++) {
-            fcfs_burst[j] = calloc(2, sizeof(int));
-            fcfs_burst[j][0] = ptr_pcs -> burst[j][0];
-            fcfs_burst[j][1] = ptr_pcs -> burst[j][1];
-        }
-        fcfs_ptr_pcs -> burst = fcfs_burst;
-        fcfs_ptr_pcs++;
-        ptr_pcs++;
+process *copy_process(const process* proc_tmpl) {
+    process *proc = malloc(sizeof(process));
+    memcpy(proc, proc_tmpl, sizeof(process));
+    proc->burst = malloc(sizeof(proc_tmpl->burst));
+    memcpy(proc->burst, proc_tmpl->burst, sizeof(proc_tmpl->burst));
+    int num_bursts = sizeof(proc_tmpl->burst) / (sizeof(int*));
+    for (int i = 0; i < num_bursts; ++i) {
+        proc->burst[i] = calloc(sizeof(int), 2);
+        memcpy(proc->burst[i], proc_tmpl->burst[i], sizeof(int) * 2);
     }
-    fcfs_ptr_pcs = fcfs_all_processes;
-    struct process *queue[num_of_proc];
-    for (int i = 0; i < num_of_proc; i++) {
-    	queue[i] = fcfs_ptr_pcs;
-    	fcfs_ptr_pcs++;
+    return proc;
+}
+
+void free_process(process* proc) {
+    int num_bursts = sizeof(proc->burst) / (sizeof(int*) * 2);
+    for (int i = 0; i < num_bursts; ++i) {
+        free(proc->burst[i]);
     }
+    free(proc->burst);
+    free(proc);
+}
+
+settings *copy_config(const settings *config_tmpl) {
+    settings *config = malloc(sizeof(settings));
+    memcpy(config, config_tmpl, sizeof(settings));
+
+    config->procs = calloc(config->num_procs, sizeof(process));
+    for (int i = 0; i < config->num_procs; ++i) config->procs[i] = copy_process(config->procs[i]);
+    config->q = queue_open(); 
+    return config;
+}
+
+void free_config(settings *config) {
+    for (int i = 0; i < config->num_procs; ++i) free_process(config->procs[i]);
+    free(config->procs);
+    queue_close(config->q);
+    free(config);
+}
+
+void FCFS(const settings *config_tmpl) {
+    settings *config = copy_config(config_tmpl);
+    process** procs = config->procs;
+    int num_procs = config->num_procs;
+    int t_cx = config->t_cx;
+    queue *q = config->q;
+
+    // Sort items into queue
+    //for (int i = 0; i < num_of_proc; i++) {
+    //    queue[i] = fcfs_ptr_pcs;
+    //    fcfs_ptr_pcs++;
+    //}
 
 
-
+/*
     // Setup for FCFS Simulation
     int time = 0;
     int wait_times[num_of_proc];
@@ -324,35 +399,35 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
 
     // FCFS Simulation
     while(1) {
-    	// Check if something can arrive to queue at this given time
+        // Check if something can arrive to queue at this given time
         fcfs_ptr_pcs = fcfs_all_processes;
-    	for (int i = 0; i < num_of_proc; i++) {
-    		if (fcfs_ptr_pcs->t_arrive == time) {
-    			// Add to queue
+        for (int i = 0; i < num_of_proc; i++) {
+            if (fcfs_ptr_pcs->t_arrive == time) {
+                // Add to queue
                 if (newest_index == -1) {
                     newest_index = 0;
                 }
-    			fcfs_ptr_pcs->WT = time;
-    			queue[newest_index] = fcfs_ptr_pcs;
+                fcfs_ptr_pcs->WT = time;
+                queue[newest_index] = fcfs_ptr_pcs;
                 bursts[newest_index] = fcfs_ptr_pcs->num_cpu_burst; 
-    			newest_index += 1;
+                newest_index += 1;
 
-    			// Print that you have added to queue
-    			printf("time %dms: Process %c arrived; added to ready queue [Q ", time, fcfs_ptr_pcs->id);
-    			  // If queue is now empty, after starting new process
-    			if (curr_index == newest_index) {
-    				printf("<empty>]\n");
-    			} else {
-    				for (int j = curr_index; j < newest_index; j++) {
-    					if (j != newest_index - 1) {
-    						printf("%c ", queue[j]->id);
-    					} else {
-    						printf("%c", queue[j]->id);
-    					}
-    				}
-    				printf("]\n");
-    			} 
-    		}
+                // Print that you have added to queue
+                printf("time %dms: Process %c arrived; added to ready queue [Q ", time, fcfs_ptr_pcs->id);
+                  // If queue is now empty, after starting new process
+                if (curr_index == newest_index) {
+                    printf("<empty>]\n");
+                } else {
+                    for (int j = curr_index; j < newest_index; j++) {
+                        if (j != newest_index - 1) {
+                            printf("%c ", queue[j]->id);
+                        } else {
+                            printf("%c", queue[j]->id);
+                        }
+                    }
+                    printf("]\n");
+                } 
+            }
             fcfs_ptr_pcs++;
         }
 
@@ -375,28 +450,28 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
                     printf("]\n");
                 }
             }
-        	// Every process has been taken care of -- done with FCFS simulation
-        	if (curr_index == num_of_proc) {
-        		printf("time %dms: Simulator ended for FCFS [Q <empty>]\n", time);
-        		break;
-        	}
-        	// Iterate to next time if nothing is in the queue
-        	if (curr_index == newest_index) {
+            // Every process has been taken care of -- done with FCFS simulation
+            if (curr_index == num_of_proc) {
+                printf("time %dms: Simulator ended for FCFS [Q <empty>]\n", time);
+                break;
+            }
+            // Iterate to next time if nothing is in the queue
+            if (curr_index == newest_index) {
                 time += 1;
                 burst_time -= 1;
-        		continue;
-        	}
-        	// Simulate "popping a queue" by iterating to next index
-        	curr_index += 1;
-        	burst_time = queue[curr_index - 1]->num_cpu_burst;
-        	// Store the current process' wait time, to find the average later
-        	wait_times[curr_index - 1] = time - queue[curr_index - 1]->WT;
-        	// Store the previous process' turn around time, to find the average later
-        	turn_around_times[curr_index - 1] = time - queue[curr_index - 1]->WT;
+                continue;
+            }
+            // Simulate "popping a queue" by iterating to next index
+            curr_index += 1;
+            burst_time = queue[curr_index - 1]->num_cpu_burst;
+            // Store the current process' wait time, to find the average later
+            wait_times[curr_index - 1] = time - queue[curr_index - 1]->WT;
+            // Store the previous process' turn around time, to find the average later
+            turn_around_times[curr_index - 1] = time - queue[curr_index - 1]->WT;
 
             time += context_switch / 2;
 
-        	// Print that new process is using CPU
+            // Print that new process is using CPU
             if (curr_index <= newest_index) {
                 printf("time %dms: Process %c started using the CPU for %dms burst [Q ", time, queue[curr_index - 1]->id, queue[curr_index - 1]->num_cpu_burst);
                 // If queue is now empty, after starting new process
@@ -414,9 +489,9 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
                 }
             } 
         }
-    	time++;
-    	burst_time--;
-	}
+        time++;
+        burst_time--;
+    }
 
     // Calculate averages and output in simout.txt
     for (int i = 0; i < num_of_proc; i++) {
@@ -427,15 +502,16 @@ void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double a
     printf("\n"); 
     output_file(2, avg_BT / num_of_proc, avg_WT / num_of_proc, avg_TAT / num_of_proc, context_switches, 0);
 
-	// Deallocate FCFS memory
+    // Deallocate FCFS memory
     fcfs_ptr_pcs = fcfs_all_processes;
-	for (int i = 0; i < num_of_proc; i++) {
+    for (int i = 0; i < num_of_proc; i++) {
         for (int j=0; j < fcfs_ptr_pcs->num_cpu_burst; j++){
             free(fcfs_ptr_pcs->burst[j]);
         }
         free(fcfs_ptr_pcs->burst);
         fcfs_ptr_pcs++;
     }
+*/
 }
 
 
@@ -458,21 +534,21 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
     //struct process *srt_ptr_pcs_free = srt_all_processes;
 
     for (int i = 0; i < num_of_proc; i++){
-        srt_ptr_pcs -> id = ptr_pcs -> id;
-        srt_ptr_pcs -> t_arrive = ptr_pcs -> t_arrive;
-        srt_ptr_pcs -> num_cpu_burst = ptr_pcs -> num_cpu_burst;
-        srt_ptr_pcs -> counter_cpu_burst = ptr_pcs -> counter_cpu_burst;
+        srt_ptr_pcs->id = ptr_pcs->id;
+        srt_ptr_pcs->t_arrive = ptr_pcs->t_arrive;
+        srt_ptr_pcs->num_cpu_burst = ptr_pcs->num_cpu_burst;
+        srt_ptr_pcs->counter_cpu_burst = ptr_pcs->counter_cpu_burst;
         
         printf("Process %c [NEW] (arrival time %d ms) %d CPU bursts\n", srt_ptr_pcs->id, srt_ptr_pcs->t_arrive, srt_ptr_pcs->counter_cpu_burst);
 
         int **srt_burst;
-        srt_burst = calloc(srt_ptr_pcs -> num_cpu_burst, sizeof(int *));
+        srt_burst = calloc(srt_ptr_pcs->num_cpu_burst, sizeof(int *));
 
-        for ( int j = 0; j < srt_ptr_pcs -> num_cpu_burst; j++){
+        for ( int j = 0; j < srt_ptr_pcs->num_cpu_burst; j++){
 
             srt_burst[j] = calloc(2, sizeof(int));
-            srt_burst[j][0] = ptr_pcs -> burst[j][0];
-            srt_burst[j][1] = ptr_pcs -> burst[j][1];
+            srt_burst[j][0] = ptr_pcs->burst[j][0];
+            srt_burst[j][1] = ptr_pcs->burst[j][1];
 
             srt_output_total_cpu_burst_time += srt_burst[j][0];
         }
@@ -481,10 +557,10 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
         srt_output_num_cpu_burst += srt_ptr_pcs->num_cpu_burst;
         
 
-        srt_ptr_pcs -> burst = srt_burst;
+        srt_ptr_pcs->burst = srt_burst;
 
         // initial guess of tau
-        srt_ptr_pcs -> tau = 100;
+        srt_ptr_pcs->tau = 100;
 
         srt_ptr_pcs++;
         ptr_pcs++;
@@ -505,7 +581,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
 
     int t_run = 0;
 
-    // need two queues -> cpu queue and io queue.
+    // need two queues->cpu queue and io queue.
     struct process *srt_ptr_pcs_cpu_queue[num_of_proc];
     struct process *srt_ptr_pcs_io_queue[num_of_proc];
 
@@ -555,13 +631,13 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
         /* 
             for each millisecond in the simulator:
                 1. check if any of the process arrive
-                    if true -> check if any of the process is running
-                        if true -> check if need to preempt
-                    if false -> run the arrive process
+                    if true->check if any of the process is running
+                        if true->check if need to preempt
+                    if false->run the arrive process
                 2. check if any of the process run
-                    if true -> substract 1ms from the current running CPU burst
+                    if true->substract 1ms from the current running CPU burst
                 3. check if any of the process is on IO burst
-                    if true -> substract 1ms from the current running IO burst     
+                    if true->substract 1ms from the current running IO burst     
 
         */
 
@@ -593,8 +669,8 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
 
 
             finish_process = false;    
-            srt_ptr_tmp = srt_ptr_pcs -> burst;
-            for (int j = 0; j < srt_ptr_pcs -> num_cpu_burst; j++){
+            srt_ptr_tmp = srt_ptr_pcs->burst;
+            for (int j = 0; j < srt_ptr_pcs->num_cpu_burst; j++){
                 if (srt_ptr_tmp[j][0]!= 0){
                     break;
                 }
@@ -621,7 +697,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                 if (num_of_proc == 1){
                     finish = true;
 
-                    for (int k = 0; k < srt_ptr_pcs -> num_cpu_burst; k++){
+                    for (int k = 0; k < srt_ptr_pcs->num_cpu_burst; k++){
                         free(srt_ptr_pcs->burst[k]);
                     }
                     free(srt_ptr_pcs->burst);
@@ -632,7 +708,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                 else {
                     //printf("[test]process %c is finished, ", srt_ptr_pcs->id);
                     // free the dynamic space for current process
-                    for (int k = 0; k < srt_ptr_pcs -> num_cpu_burst; k++){
+                    for (int k = 0; k < srt_ptr_pcs->num_cpu_burst; k++){
                         free(srt_ptr_pcs->burst[k]);
                     }
                     free(srt_ptr_pcs->burst);
@@ -702,7 +778,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
           
                                 srt_ptr_pcs_cpu_queue[0] = srt_ptr_pcs_current;
                                 srt_num_pcs_cpu_queue++;
-                                srt_id_pcs_running_cpu = srt_ptr_pcs -> id;
+                                srt_id_pcs_running_cpu = srt_ptr_pcs->id;
                                 //including both move out and move in 
                                 t_cs = context_switch;
                                 srt_output_total_context_switch += 1;
@@ -725,7 +801,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                                 
                                 srt_ptr_pcs_cpu_queue[0] = srt_ptr_pcs_current;
                                 srt_num_pcs_cpu_queue++;
-                                srt_id_pcs_running_cpu = srt_ptr_pcs -> id;
+                                srt_id_pcs_running_cpu = srt_ptr_pcs->id;
                                 t_cs = context_switch;
                                 srt_output_total_context_switch += 1;
                                 new_burst = true;
@@ -849,7 +925,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
 
                                     srt_ptr_pcs_cpu_queue[0] = srt_ptr_pcs_current;
                                     srt_num_pcs_cpu_queue++;
-                                    srt_id_pcs_running_cpu = srt_ptr_pcs -> id;
+                                    srt_id_pcs_running_cpu = srt_ptr_pcs->id;
                                     //including both move out and move in 
                                     t_cs = context_switch;
                                     srt_output_total_context_switch += 1;
@@ -871,7 +947,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                                     
                                     srt_ptr_pcs_cpu_queue[0] = srt_ptr_pcs_current;
                                     srt_num_pcs_cpu_queue++;
-                                    srt_id_pcs_running_cpu = srt_ptr_pcs -> id;
+                                    srt_id_pcs_running_cpu = srt_ptr_pcs->id;
                                     t_cs = context_switch;
                                     srt_output_total_context_switch += 1;
                                     new_burst = true;
@@ -1023,7 +1099,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                         // once a process arrive and finish context switch
                         // add it to running process and remove from queue.
                         for (int j = 0; j < srt_num_pcs_cpu_queue; j++){
-                            if (srt_ptr_pcs_cpu_queue[j] -> id == srt_id_pcs_running_cpu){
+                            if (srt_ptr_pcs_cpu_queue[j]->id == srt_id_pcs_running_cpu){
                                 //remove this process in the queue
                                 for (int k = j; k < srt_num_pcs_cpu_queue-1; k++){
                                     srt_ptr_pcs_cpu_queue[k] = srt_ptr_pcs_cpu_queue[k+1];
@@ -1043,7 +1119,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                         //printf("[test] check if process %c has finished -- ",srt_id_pcs_running_cpu);
                         //
                         
-                        //find the first available value in srt_ptr_pcs_running_cpu -> burst
+                        //find the first available value in srt_ptr_pcs_running_cpu->burst
                         // if no available value, this process is finishedcheck if p
                         srt_ptr_tmp = srt_ptr_pcs_running_cpu->burst;
                         int tmp = 0;
@@ -1108,7 +1184,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                                 // might have memory issues when removing element from dynamically allocated array 
 
                                 // free the dynamic space for current process
-                                for (int k = 0; k < srt_ptr_pcs -> num_cpu_burst; k++){
+                                for (int k = 0; k < srt_ptr_pcs->num_cpu_burst; k++){
                                     free(srt_ptr_pcs->burst[k]);
                                 }
                                 free(srt_ptr_pcs->burst);
@@ -1125,7 +1201,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
 
                         // if there's is more burst to go for this process
                         // tmp is calculated next cpu burst time
-                        srt_ptr_pcs_running_cpu -> next_tau = tmp;                    
+                        srt_ptr_pcs_running_cpu->next_tau = tmp;                    
                         //finish_cpu_burst = false;
                         new_burst = false;
 
@@ -1181,7 +1257,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                         // current process is the running process
                         if (srt_id_pcs_running_cpu == srt_ptr_pcs->id){
 
-                            int ** srt_ptr_burst = srt_ptr_pcs_running_cpu -> burst;
+                            int ** srt_ptr_burst = srt_ptr_pcs_running_cpu->burst;
 
                             for (int j = 0; j < srt_ptr_pcs_running_cpu->num_cpu_burst; j++){
                                 if(srt_ptr_burst[j][0] == 0 && srt_ptr_burst[j][1] == 0){
@@ -1254,8 +1330,8 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                                             
                                             printf("time %dms: Process %c (tau %dms) completed a CPU burst; %d bursts to go [Q %s]\n",t_run,srt_ptr_pcs_running_cpu->id, srt_ptr_pcs_running_cpu->tau, srt_ptr_pcs_running_cpu->counter_cpu_burst, cpu_queue);
                                             // TODO: recalculate tau
-                                            srt_tau = alpha * (srt_ptr_pcs_running_cpu -> next_tau) + (1 - alpha) * srt_ptr_pcs_running_cpu -> tau;
-                                            srt_ptr_pcs_running_cpu -> tau = srt_tau;
+                                            srt_tau = alpha * (srt_ptr_pcs_running_cpu->next_tau) + (1 - alpha) * srt_ptr_pcs_running_cpu->tau;
+                                            srt_ptr_pcs_running_cpu->tau = srt_tau;
                                             printf("time %dms: Recalculated tau = %dms for process %c [Q %s]\n", t_run, srt_tau, srt_ptr_pcs_running_cpu->id, cpu_queue);
                                             printf("time %dms: Process %c switching out of CPU; will block on I/O until time %dms [Q %s]\n", t_run, srt_id_pcs_running_cpu, t_run + t_cs + srt_ptr_burst[j][1], cpu_queue);
 
@@ -1275,8 +1351,8 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                                             
                                             printf("time %dms: Process %c (tau %dms) completed a CPU burst; %d bursts to go [Q %s]\n",t_run,srt_ptr_pcs_running_cpu->id, srt_ptr_pcs_running_cpu->tau, srt_ptr_pcs_running_cpu->counter_cpu_burst, cpu_queue);
                                             // TODO: recalculate tau
-                                            srt_tau = alpha * (srt_ptr_pcs_running_cpu -> next_tau) + (1 - alpha) * srt_ptr_pcs_running_cpu -> tau;
-                                            srt_ptr_pcs_running_cpu -> tau = srt_tau;
+                                            srt_tau = alpha * (srt_ptr_pcs_running_cpu->next_tau) + (1 - alpha) * srt_ptr_pcs_running_cpu->tau;
+                                            srt_ptr_pcs_running_cpu->tau = srt_tau;
                                             printf("time %dms: Recalculated tau = %dms for process %c [Q %s]\n", t_run, srt_tau, srt_ptr_pcs_running_cpu->id, cpu_queue);
                                             printf("time %dms: Process %c switching out of CPU; will block on I/O until time %dms [Q %s]\n", t_run, srt_id_pcs_running_cpu, t_run + t_cs + srt_ptr_burst[j][1], cpu_queue);
 
@@ -1346,7 +1422,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                 //only do io if this process is the running io process
                 if (srt_id_pcs_running_io == srt_ptr_pcs->id){
 
-                    int ** srt_ptr_burst = srt_ptr_pcs_running_io -> burst;
+                    int ** srt_ptr_burst = srt_ptr_pcs_running_io->burst;
                     for (int j = 0; j < srt_ptr_pcs_running_io->num_cpu_burst; j++){
 
                         //do io burst for the first available io
@@ -1399,7 +1475,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                         
                                                 srt_ptr_pcs_cpu_queue[0] = srt_ptr_pcs_current;
                                                 srt_num_pcs_cpu_queue++;
-                                                srt_id_pcs_running_cpu = srt_ptr_pcs -> id;
+                                                srt_id_pcs_running_cpu = srt_ptr_pcs->id;
                                                 //including both move out and move in 
                                                 t_cs = context_switch;
                                                 srt_output_total_context_switch += 1;
@@ -1422,7 +1498,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                                                 
                                                 srt_ptr_pcs_cpu_queue[0] = srt_ptr_pcs_current;
                                                 srt_num_pcs_cpu_queue++;
-                                                srt_id_pcs_running_cpu = srt_ptr_pcs -> id;
+                                                srt_id_pcs_running_cpu = srt_ptr_pcs->id;
                                                 t_cs = context_switch;
                                                 srt_output_total_context_switch += 1;
                                                 new_burst = true;
@@ -1551,7 +1627,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
 
                                                     srt_ptr_pcs_cpu_queue[0] = srt_ptr_pcs_current;
                                                     srt_num_pcs_cpu_queue++;
-                                                    srt_id_pcs_running_cpu = srt_ptr_pcs -> id;
+                                                    srt_id_pcs_running_cpu = srt_ptr_pcs->id;
                                                     //including both move out and move in 
                                                     t_cs = context_switch;
                                                     srt_output_total_context_switch += 1;
@@ -1573,7 +1649,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                                                     
                                                     srt_ptr_pcs_cpu_queue[0] = srt_ptr_pcs_current;
                                                     srt_num_pcs_cpu_queue++;
-                                                    srt_id_pcs_running_cpu = srt_ptr_pcs -> id;
+                                                    srt_id_pcs_running_cpu = srt_ptr_pcs->id;
                                                     t_cs = context_switch;
                                                     srt_output_total_context_switch += 1;
                                                     new_burst = true;
@@ -1792,13 +1868,13 @@ void RR(struct process *ptr_pcs, int num_of_proc, int context_switch, double alp
         rr_ptr_pcs->num_cpu_burst = ptr_pcs->num_cpu_burst;
         printf("Process %c [NEW] (arrival time %d ms) %d CPU bursts\n", rr_ptr_pcs->id, rr_ptr_pcs->t_arrive, rr_ptr_pcs->num_cpu_burst);
         int **rr_burst;
-        rr_burst = calloc(rr_ptr_pcs -> num_cpu_burst, sizeof(int *));
-        for (int j = 0; j < rr_ptr_pcs -> num_cpu_burst; j++) {
+        rr_burst = calloc(rr_ptr_pcs->num_cpu_burst, sizeof(int *));
+        for (int j = 0; j < rr_ptr_pcs->num_cpu_burst; j++) {
             rr_burst[j] = calloc(2, sizeof(int));
-            rr_burst[j][0] = ptr_pcs -> burst[j][0];
-            rr_burst[j][1] = ptr_pcs -> burst[j][1];
+            rr_burst[j][0] = ptr_pcs->burst[j][0];
+            rr_burst[j][1] = ptr_pcs->burst[j][1];
         }
-        rr_ptr_pcs -> burst = rr_burst;
+        rr_ptr_pcs->burst = rr_burst;
         rr_ptr_pcs++;
         ptr_pcs++;
     }
