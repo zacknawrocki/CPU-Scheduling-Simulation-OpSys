@@ -1,3 +1,4 @@
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -6,86 +7,29 @@
 #include <stdbool.h> 
 #include <string.h>
 
-typedef struct process{
-    char id; 
-    int t_arrive; 
-    int num_cpu_burst; 
-    int counter_cpu_burst;
-    int **burst; 
-    int tau;
-    int next_tau;  //SRT need it to calculate tau
-    int preemptions;
-    int TAT;
-    int WT;
-} process;
+#include "settings.h"
+#include "process.h"
+#include "queue.h"
 
-typedef struct queue {
-    int capacity;
-    int start_idx;
-    int end_idx;
-    process **items;
-} queue;
+/*typedef struct {
+	int preemptions;
+} results;*/
 
-typedef struct {
-    int num_procs;
-    process **procs;
-    int t_cx;
-    queue *q;
-    int preemptions;
-    double alpha;
-    int time_slice;
-    int rr_fcfs;
-} settings;
-
-queue *queue_open() {
-    queue *q = malloc(sizeof(queue));
-    memset(q, 0, sizeof(queue));
-    q->capacity = 26;
-    q->items = calloc(sizeof(process*), q->capacity);
-}
-
-void queue_close(queue *q) {
-    free(q->items);
-    free(q);
-}
-
-void queue_push(queue *q, process *proc) {
-    q->end_idx = (q->end_idx + q->capacity + 1) % q->capacity;
-    q->items[q->end_idx] = proc;
-}
-
-process *queue_pop(queue *q) {
-    if (q->start_idx == q->end_idx) return NULL;
-    process *result = q->items[q->start_idx];
-    q->items[q->start_idx] = NULL;
-    q->start_idx = (q->start_idx + q->capacity + 1) % q->capacity;
-    return result;
-}
-
-int queue_length(queue *q) {
-    if (q->end_idx > q->start_idx) {
-        return q->end_idx - q->start_idx;
-    } else {
-        return q->end_idx + (q->capacity - q->start_idx);
-    }
-}
 
 
 void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
-void FCFS(const settings *config_tmpl);
-//void FCFS(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
-void RR(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
+void FCFS(settings *config);
+void RR(settings *config);
 void output_file(int algorithm, int avg_BT, int avg_WT, int avg_TAT, int context_switches, int preemptions);
 
 int main(int argc,char** argv) 
 { 
 
-    if (argc < 7){
-        fprintf(stderr, "not enough input arguments\n.");
+    if (argc < 7) {
+        fprintf(stderr, "not enough input arguments.\n");
         return EXIT_FAILURE;
-    }
-    else if (argc > 9){
-        fprintf(stderr, "too many input arguments\n.");
+    } else if (argc > 9) {
+        fprintf(stderr, "too many input arguments.\n");
         return EXIT_FAILURE;
     }
 
@@ -137,19 +81,9 @@ int main(int argc,char** argv)
     seventh input argument is the t_slice for time slice in RR in milliseconds
     eighth input argument is rr_add the flag for whether processes are added to the end or beginning of the ready queue
     */
-    //int time_slice = atoi(argv[7]);
+    int time_slice = atoi(argv[7]);
     
-    /*
-    char *begin_or_end = "END";
-    begin_or_end = argv[8];
-    printf("%s\n", begin_or_end);
-    if (argc == 9) {
-        if (!(strcmp(begin_or_end, "BEGINNING") == 0 || strcmp(begin_or_end, "END") == 0)) {
-            fprintf(stderr, "invalid begin_or_end: %s\n.", begin_or_end);
-            return EXIT_FAILURE;
-        }
-    }
-    */
+    bool rr_queue_push_end = !(argc >= 9 && strncmp(argv[8], "BEGINNING", 10) == 0);
     
     // ==== finish parcing the input parameters ====
     // start the random number generator
@@ -289,8 +223,26 @@ int main(int argc,char** argv)
     //Implement your own function here
     //============================================  
     
-    //reset the pointer point to the start of the all_process array
-    //ptr_pcs = all_processes;
+    // Create a config template to be sent (always as a copy) to the different algorithms
+    settings config_template;
+    config_template.num_procs = num_of_proc;
+    config_template.procs = NULL;
+    config_template.t_cx = context_switch;
+    config_template.q = NULL;
+    config_template.alpha = alpha;
+    config_template.time_slice = time_slice;
+    config_template.rr_queue_push_end = rr_queue_push_end;
+    settings *config = NULL;
+
+    // Call FCFS and RR with template copy
+    config = copy_config(&config_template);
+    FCFS(config); 
+    free_config(config);
+
+    config = copy_config(&config_template);
+    RR(copy_config(&config_template)); 
+    free_config(config);
+
     //FCFS(ptr_pcs, num_of_proc, context_switch, alpha);
     
     ptr_pcs = all_processes;
@@ -327,59 +279,151 @@ int main(int argc,char** argv)
 
     return 0;
 }
-
-process *copy_process(const process* proc_tmpl) {
-    process *proc = malloc(sizeof(process));
-    memcpy(proc, proc_tmpl, sizeof(process));
-    proc->burst = malloc(sizeof(proc_tmpl->burst));
-    memcpy(proc->burst, proc_tmpl->burst, sizeof(proc_tmpl->burst));
-    int num_bursts = sizeof(proc_tmpl->burst) / (sizeof(int*));
-    for (int i = 0; i < num_bursts; ++i) {
-        proc->burst[i] = calloc(sizeof(int), 2);
-        memcpy(proc->burst[i], proc_tmpl->burst[i], sizeof(int) * 2);
-    }
-    return proc;
+void FCFS(settings *config) {
+    config->rr_queue_push_end = true;
+    config->time_slice = INT_MAX;
+    RR(config);
 }
 
-void free_process(process* proc) {
-    int num_bursts = sizeof(proc->burst) / (sizeof(int*) * 2);
-    for (int i = 0; i < num_bursts; ++i) {
-        free(proc->burst[i]);
-    }
-    free(proc->burst);
-    free(proc);
-}
-
-settings *copy_config(const settings *config_tmpl) {
-    settings *config = malloc(sizeof(settings));
-    memcpy(config, config_tmpl, sizeof(settings));
-
-    config->procs = calloc(config->num_procs, sizeof(process));
-    for (int i = 0; i < config->num_procs; ++i) config->procs[i] = copy_process(config->procs[i]);
-    config->q = queue_open(); 
-    return config;
-}
-
-void free_config(settings *config) {
-    for (int i = 0; i < config->num_procs; ++i) free_process(config->procs[i]);
-    free(config->procs);
-    queue_close(config->q);
-    free(config);
-}
-
-void FCFS(const settings *config_tmpl) {
-    settings *config = copy_config(config_tmpl);
+void RR(settings *config) {
+    // To start, each process should be in NOT_YET_ARRIVED state
     process** procs = config->procs;
     int num_procs = config->num_procs;
     int t_cx = config->t_cx;
+    int time_slice = config->time_slice;
+    bool rr_queue_push_end = config->rr_queue_push_end;
     queue *q = config->q;
+    int t = 0;
+    for (t = 0; num_running_procs(config) > 0; ++t) {
+        process *current_proc = queue_peek(q);
+        // 1) see if any processes using the cpu finishes its cx_off switch (either take them off the queue or requeue) or cx_on switch
+        if (current_proc != NULL) {
+            burst_type current_burst_type = current_proc->current_burst_type;
+            int time_in_burst = t - current_proc->current_burst_start; 
+            if ((current_burst_type == CX_OFF || current_burst_type == CX_ON) && time_in_burst >= t_cx / 2) {
+                // update old proc state
+                int* current_burst = current_proc->burst[current_proc->counter_cpu_burst];
+                burst_type next_burst = (current_burst[0] == 0) ? IO_BURST : CPU_BURST;
+                current_proc->current_burst_type = next_burst;
+
+               if (current_burst_type == CX_OFF) { // if the context was switching off this proc
+                    queue_pop(q);
+                    if (next_burst == CPU_BURST) {
+                        // process had been preempted: add back to queue
+                        queue_push(q, current_proc, rr_queue_push_end); // push current proc to back of queue
+                        current_proc->state = READY;
+                        current_proc->current_burst_start = -1;
+                    } else {
+                        // process had finished its cpu burst -- now do IO
+                        current_proc->state = BLOCKED;
+                        current_proc->current_burst_start = t;
+                    }
+                    current_proc = NULL;
+                } else {
+                    // if the context is switching to this process
+                    current_proc->current_burst_start = t;
+                    // state is already RUNNING
+                    // burst type already set to CPU (wouldn't have been queued if ready to do IO)
+
+                }
+
+            }
+        }
+        // if the current proc was popped off queue because it CX_OFFed, start the context switch on the next one
+        if (current_proc == NULL && queue_peek(q) != NULL) {
+            current_proc = queue_peek(q);
+            current_proc->state = RUNNING;
+            current_proc->current_burst_type = CX_ON;
+            current_proc->current_burst_start = t;
+        }
+
+        // 2) see if any processes using the cpu finishes its burst (either take them off the queue or requeue)
+        if (current_proc != NULL) {
+            burst_type current_burst_type = current_proc->current_burst_type;
+            int time_in_burst = t - current_proc->current_burst_start; 
+            int current_burst_length = current_proc->burst[current_proc->counter_cpu_burst][0];
+            if (current_burst_type == CPU_BURST && time_in_burst >= current_burst_length) {
+                current_proc->current_burst_type = CX_OFF;
+                current_proc->current_burst_start = t;
+                current_proc->burst[current_proc->counter_cpu_burst][0] = 0;
+            }
+        }
+        
+        // 3) see if any time slices expire (RR mode only); move them to the end of the queue
+        if (current_proc != NULL && queue_length(q) > 1) {
+            int time_in_burst = t - current_proc->current_burst_start; 
+            if(time_in_burst >= time_slice && current_proc->current_burst_type == CPU_BURST) {
+                current_proc->burst[current_proc->counter_cpu_burst][0] -= time_in_burst;
+                current_proc->current_burst_type = CX_OFF;
+                current_proc->current_burst_start = t;
+                // TODO: accounting
+            }
+        }
+
+        // 4) see if any processes finish their IO (requeue them)
+        for (int i = 0; i < num_procs; ++i) {
+            process *proc = procs[i];
+            if (proc->state != BLOCKED || proc->current_burst_type != IO_BURST) continue;
+            int time_in_burst = t - current_proc->current_burst_start; 
+            int current_burst_length = current_proc->burst[current_proc->counter_cpu_burst][0];
+            if (time_in_burst < current_burst_length) continue;
+
+            // If we get here, the process is blocked due to being in an IO_BURST, 
+            // which has been completed
+            bool is_finished = proc->counter_cpu_burst + 1 >= proc->num_cpu_burst;
+            if (is_finished) {
+                // if this was the last IO burst, we're done
+                proc->state = FINISHED;
+            } else {
+                // otherwise re-queue the process
+                proc->state = READY;
+                current_proc->current_burst_start = -1;
+                queue_push(q, proc, rr_queue_push_end);
+            }
+
+        }
+
+        // 5) see if any processes arrive (add them to queue after breaking ties)
+        for (int i = 0; i < num_procs; ++i) {
+            process *proc = procs[i];
+            if (proc->state != NOT_YET_ARRIVED) continue;
+            if (proc->t_arrive > t) continue;
+
+            // If we get here, process should arrive now
+            proc->state = READY;
+            proc->counter_cpu_burst = 0;
+            queue_push(q, proc, rr_queue_push_end);
+        }
+
+        // 6) see if there are no more processes (exit simulation)
+        // No code needed. Checked in for loop
+    }
 
     // Sort items into queue
     //for (int i = 0; i < num_of_proc; i++) {
     //    queue[i] = fcfs_ptr_pcs;
     //    fcfs_ptr_pcs++;
     //}
-
+    /*
+    int proc = 0;
+    int time = 0;
+    while (proc < num_procs) {
+    	for (int i = 0; i < num_procs; ++i) {
+    		int tie_breaker[num_procs];
+    		int num_ties = 0;
+    		if ((*(procs + i) + 0)->t_arrive == time) {
+    			tie_breaker[num_ties] = i;
+    			proc ++;
+    			num_ties += 1;
+    		}
+    		// Tie breaker rules from assignment
+    		for (int j = 0; j < num_ties; j++) {
+    			// queue_push(q, *(procs + j));
+    		}
+    	}
+    	time ++;
+    }
+*/
 
 /*
     // Setup for FCFS Simulation
@@ -1855,82 +1899,6 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
 
 }
 
-/*
-void RR(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha) {
-
-    // Dynamically allocate again, so the original data is not modified
-    struct process rr_all_processes[num_of_proc];
-    struct process *rr_ptr_pcs = rr_all_processes;
-
-    for (int i = 0; i < num_of_proc; i++) {
-        rr_ptr_pcs->id = ptr_pcs->id;
-        rr_ptr_pcs->t_arrive = ptr_pcs->t_arrive;
-        rr_ptr_pcs->num_cpu_burst = ptr_pcs->num_cpu_burst;
-        printf("Process %c [NEW] (arrival time %d ms) %d CPU bursts\n", rr_ptr_pcs->id, rr_ptr_pcs->t_arrive, rr_ptr_pcs->num_cpu_burst);
-        int **rr_burst;
-        rr_burst = calloc(rr_ptr_pcs->num_cpu_burst, sizeof(int *));
-        for (int j = 0; j < rr_ptr_pcs->num_cpu_burst; j++) {
-            rr_burst[j] = calloc(2, sizeof(int));
-            rr_burst[j][0] = ptr_pcs->burst[j][0];
-            rr_burst[j][1] = ptr_pcs->burst[j][1];
-        }
-        rr_ptr_pcs->burst = rr_burst;
-        rr_ptr_pcs++;
-        ptr_pcs++;
-    }
-    rr_ptr_pcs = rr_all_processes;
-    struct process *queue[num_of_proc];
-    for (int i = 0; i < num_of_proc; i++) {
-        queue[i] = rr_ptr_pcs;
-        rr_ptr_pcs++;
-    }
-
-
-
-    // Setup for RR Simulation
-    int time = 0;
-    int wait_times[num_of_proc];
-    int turn_around_times[num_of_proc];
-    int bursts[num_of_proc];
-    int burst_time = 0;
-    int curr_index = 0;
-    int newest_index = 0;
-    int context_switches = 0;
-    int avg_BT = 0;
-    int avg_WT = 0;
-    int avg_TAT = 0;
-    printf("time 0ms: Simulator started for RR [Q <empty>]\n");
-
-
-    // RR Simulation
-   
-
-
-
-
-
-
-
-    // Calculate averages and output in simout.txt
-    for (int i = 0; i < num_of_proc; i++) {
-        avg_BT += bursts[i];
-        avg_WT += wait_times[i];
-        avg_TAT += turn_around_times[i]; 
-    }
-    printf("\n"); 
-    output_file(2, avg_BT / num_of_proc, avg_WT / num_of_proc, avg_TAT / num_of_proc, context_switches, 0);
-
-    // Deallocate RR memory
-    rr_ptr_pcs = rr_all_processes;
-    for (int i = 0; i < num_of_proc; i++) {
-        for (int j=0; j < rr_ptr_pcs->num_cpu_burst; j++){
-            free(rr_ptr_pcs->burst[j]);
-        }
-        free(rr_ptr_pcs->burst);
-        rr_ptr_pcs++;
-    }
-}
-*/
 
 // Output for text file
 // Four possible integers for algorithm paramater
