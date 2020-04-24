@@ -81,10 +81,17 @@ int main(int argc,char** argv)
     seventh input argument is the t_slice for time slice in RR in milliseconds
     eighth input argument is rr_add the flag for whether processes are added to the end or beginning of the ready queue
     */
-    int time_slice = atoi(argv[7]);
     
+    int time_slice = atoi(argv[7]);
+
+
+    /*
+
     bool rr_queue_push_end = !(argc >= 9 && strncmp(argv[8], "BEGINNING", 10) == 0);
     
+    */
+
+
     // ==== finish parcing the input parameters ====
     // start the random number generator
     // =============================================
@@ -224,6 +231,10 @@ int main(int argc,char** argv)
     //============================================  
     
     // Create a config template to be sent (always as a copy) to the different algorithms
+    
+    
+    /*
+    
     settings config_template;
     config_template.num_procs = num_of_proc;
     config_template.procs = NULL;
@@ -242,6 +253,9 @@ int main(int argc,char** argv)
     config = copy_config(&config_template);
     RR(copy_config(&config_template)); 
     free_config(config);
+
+    */
+    
 
     //FCFS(ptr_pcs, num_of_proc, context_switch, alpha);
     
@@ -652,11 +666,8 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
     int srt_tau;
     int srt_io_counter = 0;
 
-    
+    int tmp = 0;
     //outfile calculation before simulator begins
-
-
-
 
 
 
@@ -1166,13 +1177,16 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                         //find the first available value in srt_ptr_pcs_running_cpu->burst
                         // if no available value, this process is finishedcheck if p
                         srt_ptr_tmp = srt_ptr_pcs_running_cpu->burst;
-                        int tmp = 0;
+                        tmp = 0;
                         bool finish_pcs = true;
                         for (int m = 0; m < srt_ptr_pcs_running_cpu->num_cpu_burst; m++){
                             
                             // tmp is the next cpu burst
                             if (srt_ptr_tmp[m][0] != 0){
                                 tmp = srt_ptr_tmp[m][0];
+                                //---- 0424 ----
+                                srt_ptr_tmp[m][0]++;
+                                //--------------
                                 finish_pcs = false;
                                 break;
                             }
@@ -1182,8 +1196,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                             }
                         }
 
-                        printf("%d\n", finish_pcs);
-
+                        
                         if (finish_pcs == true){
 
                             // ===============================
@@ -1339,7 +1352,16 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
 
                                             srt_io_counter += srt_ptr_burst[j][1];
                                             
+                                            //---- 0424 ----
+                                            srt_ptr_burst[j][1] += 2;
+                                            tmp = srt_ptr_burst[j][1];
+                                            //--------------
+                                            
                                             if (srt_id_pcs_running_io == '-'){
+
+                                                //---- 0424 ----
+                                                srt_ptr_burst[j][1] += 1;
+                                                //--------------
 
                                                 srt_ptr_pcs_running_io = srt_ptr_pcs_running_cpu;
                                                 srt_id_pcs_running_io = srt_id_pcs_running_cpu;
@@ -1377,7 +1399,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                                             srt_tau = alpha * (srt_ptr_pcs_running_cpu->next_tau) + (1 - alpha) * srt_ptr_pcs_running_cpu->tau;
                                             srt_ptr_pcs_running_cpu->tau = srt_tau;
                                             printf("time %dms: Recalculated tau = %dms for process %c [Q %s]\n", t_run, srt_tau, srt_ptr_pcs_running_cpu->id, cpu_queue);
-                                            printf("time %dms: Process %c switching out of CPU; will block on I/O until time %dms [Q %s]\n", t_run, srt_id_pcs_running_cpu, t_run + t_cs + srt_ptr_burst[j][1], cpu_queue);
+                                            printf("time %dms: Process %c switching out of CPU; will block on I/O until time %dms [Q %s]\n", t_run, srt_id_pcs_running_cpu, t_run + t_cs + tmp, cpu_queue);
 
                                         }
                                         else{
@@ -1398,7 +1420,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                                             srt_tau = alpha * (srt_ptr_pcs_running_cpu->next_tau) + (1 - alpha) * srt_ptr_pcs_running_cpu->tau;
                                             srt_ptr_pcs_running_cpu->tau = srt_tau;
                                             printf("time %dms: Recalculated tau = %dms for process %c [Q %s]\n", t_run, srt_tau, srt_ptr_pcs_running_cpu->id, cpu_queue);
-                                            printf("time %dms: Process %c switching out of CPU; will block on I/O until time %dms [Q %s]\n", t_run, srt_id_pcs_running_cpu, t_run + t_cs + srt_ptr_burst[j][1], cpu_queue);
+                                            printf("time %dms: Process %c switching out of CPU; will block on I/O until time %dms [Q %s]\n", t_run, srt_id_pcs_running_cpu, t_run + t_cs + tmp, cpu_queue);
 
                                         }
                                         // ===============================
@@ -1412,6 +1434,8 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                                         t_cs = context_switch / 2;
                                         srt_output_total_context_switch += 1;
 
+                                        
+
                                         if (srt_ptr_burst[j][1] == -1){
 
                                             t_cs = context_switch / 2;
@@ -1422,6 +1446,8 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                                         }
                                         
                                         break;
+
+                                        
                                         
                                     }
 
