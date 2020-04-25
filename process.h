@@ -5,7 +5,7 @@ typedef enum {
 } process_state;
 
 typedef enum {
-    IO_BURST, CPU_BURST, CX_ON, CX_OFF
+    NO_BURST, IO_BURST, CPU_BURST, CX_ON, CX_OFF
 } burst_type;
 
 typedef struct process {

@@ -64,14 +64,26 @@ int queue_length(const queue *q) {
 }
 
 void print_queue_items(const queue *q) {
+    bool skip_first = false;
+    const process *current_proc = q->items[q->start_idx];
+    if (current_proc != NULL) {
+        process_state current_state = current_proc->state;
+        burst_type current_burst_type = current_proc->current_burst_type;
+        if (current_state == RUNNING && current_burst_type == CPU_BURST) skip_first = true;
+        //if (current_state == RUNNING && current_burst_type == CX_ON) skip_first = true;
+        if (current_state == RUNNING && current_burst_type == CX_OFF) skip_first = true;
+        if (current_state == FINISHED) skip_first = true;
+    }
     printf("[Q ");
-    int i = q->start_idx;
+    int start_idx = q->start_idx;
+    if (skip_first) start_idx = (start_idx + 1) % q->capacity;
+    int i = start_idx;
     if (q->items[i] == 0) {
         printf("<empty>]\n");
         return;
     }
     while (q->items[i] != NULL)  {
-        if (i != q->start_idx) printf(" ");
+        if (i != start_idx) printf(" ");
         printf("%c", q->items[i]->id);
         i = (i + 1) % q->capacity;
     } 
