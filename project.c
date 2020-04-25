@@ -7,16 +7,11 @@
 #include <stdbool.h> 
 #include <string.h>
 
+#include "debug.h"
 #include "settings.h"
 #include "process.h"
 #include "queue.h"
 #include "round_robin.h"
-
-/*typedef struct {
-	int preemptions;
-} results;*/
-
-
 
 void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
 void output_file(int algorithm, int avg_BT, int avg_WT, int avg_TAT, int context_switches, int preemptions);
@@ -110,18 +105,18 @@ int main(int argc,char** argv)
         valid = false;
         while (valid == false){
             t_arrive =  floor( -log( drand48() ) / lambda );
-            if (t_arrive < tail){
+            if (t_arrive <= tail){
                 valid = true;
             }
         }
-        //printf("process %c arrival time: %f\n", ptr_pcs ->id, t_arrive);
+        DEBUG_PRINT("process %c arrival time: %f\n", ptr_pcs ->id, t_arrive);
 
         ptr_pcs->t_arrive = t_arrive;
 
         valid = false;
         while (valid == false){
             num_CPU_burst = (int) (( drand48() ) * 100) + 1;
-            if (num_CPU_burst < tail){
+            if (num_CPU_burst <= tail){
                 valid = true;
             }
         }
@@ -146,11 +141,11 @@ int main(int argc,char** argv)
                 valid = false;
                 while (valid == false){
                     t_CPU_burst = ceil( -log( drand48() ) / lambda  );
-                    if (t_CPU_burst < tail){
+                    if (t_CPU_burst <= tail){
                         valid = true;
                     }
                 }
-                //printf("process %c %d (last) actual CPU burst %d\n", ptr_pcs->id, i+1, t_CPU_burst);
+                DEBUG_PRINT("process %c %d (last) actual CPU burst %d\n", ptr_pcs->id, i+1, t_CPU_burst);
 
                 
                 burst[i][0] = t_CPU_burst;
@@ -162,7 +157,7 @@ int main(int argc,char** argv)
                 valid = false;
                 while (valid == false){
                     t_CPU_burst = ceil( -log( drand48() ) / lambda  );
-                    if (t_CPU_burst < tail){
+                    if (t_CPU_burst <= tail){
                         valid = true;
                     }
                 }
@@ -170,11 +165,11 @@ int main(int argc,char** argv)
                 valid = false;
                 while (valid == false){
                     t_IO_burst = ceil( -log( drand48() ) / lambda  );
-                    if (t_IO_burst < tail){
+                    if (t_IO_burst <= tail){
                         valid = true;
                     }
                 }
-                //printf("process %c %d actual CPU burst %d, actual IO busrt %d\n", ptr_pcs->id, i+1, t_CPU_burst, t_IO_burst);
+                DEBUG_PRINT("process %c %d actual CPU burst %d, actual IO busrt %d\n", ptr_pcs->id, i+1, t_CPU_burst, t_IO_burst);
 
                 burst[i][0] = t_CPU_burst;
                 burst[i][1] = t_IO_burst;
@@ -243,11 +238,15 @@ int main(int argc,char** argv)
 
     // Call FCFS and RR with template copy
     config = copy_config(config_template);
+#ifndef NO_FCFS
     FCFS(config); 
+#endif
     free_config(config);
 
     config = copy_config(config_template);
-    //RR(copy_config(config_template)); 
+#ifndef NO_RR
+    RR(config); 
+#endif
     free_config(config);
 
     // Free config template when done
@@ -255,16 +254,20 @@ int main(int argc,char** argv)
 
     // Other algorithms
     ptr_pcs = all_processes;
+#ifndef NO_SRT
     SRT(ptr_pcs, num_of_proc, context_switch, alpha);
+#endif
 
     ptr_pcs = all_processes;
+#ifndef NO_SJF
     //SJF();
+#endif
 
     //need to free the dynamically allocated memory at the end of the code
 
     ptr_pcs = all_processes;
 
-    for(int i = 0; i < num_of_proc; i++){
+    for(int i = 0; i < num_of_proc; i++) {
 
         for (int j=0; j < ptr_pcs->num_cpu_burst; j++){
             free(ptr_pcs->burst[j]);
@@ -274,8 +277,6 @@ int main(int argc,char** argv)
         ptr_pcs++;
 
     }
-
-
 
     return 0;
 }
