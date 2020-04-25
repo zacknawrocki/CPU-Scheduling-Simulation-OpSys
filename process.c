@@ -6,10 +6,10 @@
 process *copy_process(const process* proc_tmpl) {
     process *proc = malloc(sizeof(process));
     memcpy(proc, proc_tmpl, sizeof(process));
-    proc->burst = malloc(sizeof(proc_tmpl->burst));
-    memcpy(proc->burst, proc_tmpl->burst, sizeof(proc_tmpl->burst));
-    int num_bursts = sizeof(proc_tmpl->burst) / (sizeof(int*));
-    for (int i = 0; i < num_bursts; ++i) {
+    proc->num_cpu_burst = proc_tmpl->num_cpu_burst;
+    proc->burst = calloc(sizeof(int*), proc->num_cpu_burst);
+    memcpy(proc->burst, proc_tmpl->burst, sizeof(int*) * proc->num_cpu_burst);
+    for (int i = 0; i < proc->num_cpu_burst; ++i) {
         proc->burst[i] = calloc(sizeof(int), 2);
         memcpy(proc->burst[i], proc_tmpl->burst[i], sizeof(int) * 2);
     }
@@ -22,7 +22,7 @@ process *copy_process(const process* proc_tmpl) {
 }
 
 void free_process(process* proc) {
-    int num_bursts = sizeof(proc->burst) / (sizeof(int*) * 2);
+    int num_bursts = proc->num_cpu_burst;
     for (int i = 0; i < num_bursts; ++i) {
         free(proc->burst[i]);
     }
@@ -43,13 +43,16 @@ int num_running_procs(const settings *config) {
 void print_process(const process *proc) {
     const char *burst_types[4] = { "IO_BURST", "CPU_BURST", "CX_ON", "CX_OFF" };
     const char *states[5] = { "NOT_YET_ARRIVED", "READY", "RUNNING", "BLOCKED", "FINISHED" };
-    printf("Process %c:\n", proc->id);
-    printf("Process %c arrives at: %dms:\n", proc->id, proc->t_arrive);
-    printf("Process %c CPU bursts: %d\n", proc->id, proc->num_cpu_burst);
-    printf("Process %c current Burst: #%d %s (started at: %dms)\n", proc->id, proc->counter_cpu_burst, burst_types[proc->current_burst_type], proc->current_burst_start);
-    // TODO(?): List bursts?
-    printf("Process %c tau: %d (next: %d)\n", proc->id, proc->tau, proc->next_tau);
-    printf("Process %c turn-around time: %d\n", proc->id, proc->TAT);
-    printf("Process %c wait time: %d\n", proc->id, proc->WT);
-    printf("Process %c current state: %s\n", proc->id, states[proc->state]);
+    printf("\tProcess %c:\n", proc->id);
+    printf("\t\tProcess %c arrives at: %dms\n", proc->id, proc->t_arrive);
+    printf("\t\tProcess %c CPU bursts: %d\n", proc->id, proc->num_cpu_burst);
+    printf("\t\tProcess %c current Burst: %s (#%d of %d; started at: %dms)\n", proc->id, burst_types[proc->current_burst_type], proc->counter_cpu_burst, proc->num_cpu_burst, proc->current_burst_start);
+    printf("\t\tBursts:\n");
+    for (int i = 0; i < proc->num_cpu_burst; ++i) {
+        printf("\t\t\t%d) CPU: %dms, IO: %dms\n", i, proc->burst[i][0], proc->burst[i][1]); 
+    }
+    printf("\t\tProcess %c tau: %d (next: %d)\n", proc->id, proc->tau, proc->next_tau);
+    printf("\t\tProcess %c turn-around time: %d\n", proc->id, proc->TAT);
+    printf("\t\tProcess %c wait time: %d\n", proc->id, proc->WT);
+    printf("\t\tProcess %c current state: %s\n", proc->id, states[proc->state]);
 }
