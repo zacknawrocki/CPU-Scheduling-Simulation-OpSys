@@ -18,4 +18,4 @@ typedef struct settings {
 settings *copy_config(const settings *config_tmpl);
 void print_config(const settings *config);
 void free_config(settings *config);
-int num_running_procs(const settings *config);
+int num_remaining_procs(const settings *config);

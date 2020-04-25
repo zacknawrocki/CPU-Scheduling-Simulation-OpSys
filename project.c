@@ -150,7 +150,8 @@ int main(int argc,char** argv)
                         valid = true;
                     }
                 }
-                //printf("process %c %d (last) actual CPU burst %d\n", ptr_pcs->id, i+1, t_CPU_burst);
+                printf("process %c %d (last) actual CPU burst %d\n", ptr_pcs->id, i+1, t_CPU_burst);
+
                 
                 burst[i][0] = t_CPU_burst;
                 burst[i][1] = -1;
@@ -173,7 +174,7 @@ int main(int argc,char** argv)
                         valid = true;
                     }
                 }
-                //printf("process %c %d actual CPU burst %d, actual IO busrt %d\n", ptr_pcs->id, i+1, t_CPU_burst, t_IO_burst);
+                printf("process %c %d actual CPU burst %d, actual IO busrt %d\n", ptr_pcs->id, i+1, t_CPU_burst, t_IO_burst);
 
                 burst[i][0] = t_CPU_burst;
                 burst[i][1] = t_IO_burst;

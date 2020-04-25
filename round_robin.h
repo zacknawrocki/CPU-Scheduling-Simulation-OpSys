@@ -10,4 +10,6 @@
 #include "queue.h"
 void FCFS(settings *config);
 void RR(settings *config);
-void RR_transition_running_process(settings *config, int t);
+void RR_transition_running_process(settings *config, process *proc, int t);
+void RR_handle_io_done(settings *config, process *proc, int t);
+void RR_handle_arrival(settings *config, process *proc, int t);

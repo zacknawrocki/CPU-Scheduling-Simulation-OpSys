@@ -30,14 +30,18 @@ void free_process(process* proc) {
     free(proc);
 }
 
-int num_running_procs(const settings *config) {
+int num_remaining_procs(const settings *config) {
     int num_procs = config->num_procs;
-    int running_procs = 0;
+    int remaining_procs = 0;
     for (int i = 0; i < num_procs; ++i) {
         process_state state = config->procs[i]->state;
-        if (state != NOT_YET_ARRIVED && state != FINISHED) ++running_procs;
+        if (state != FINISHED) ++remaining_procs;
     }
-    return running_procs;
+    return remaining_procs;
+}
+
+void print_process_summary(const process *proc) {
+    printf("Process %c [NEW] (arrival time %d ms) %d CPU bursts\n", proc->id, proc->t_arrive, proc->num_cpu_burst);
 }
 
 void print_process(const process *proc) {

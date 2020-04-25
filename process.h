@@ -27,3 +27,4 @@ typedef struct process {
 process *copy_process(const process* proc_tmpl);
 void free_process(process* proc);
 void print_process(const process *proc);
+void print_process_summary(const process *proc);
