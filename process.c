@@ -15,6 +15,7 @@ process *copy_process(const process* proc_tmpl) {
     }
     proc->counter_cpu_burst = 0;
     proc->current_burst_start = 0;
+    proc->cpu_burst_preempted = false;
     proc->state = NOT_YET_ARRIVED;
     proc->TAT = 0;
     proc->WT = 0;
@@ -51,6 +52,7 @@ void print_process(const process *proc) {
     printf("\t\tProcess %c arrives at: %dms\n", proc->id, proc->t_arrive);
     printf("\t\tProcess %c CPU bursts: %d\n", proc->id, proc->num_cpu_burst);
     printf("\t\tProcess %c current Burst: %s (#%d of %d; started at: %dms)\n", proc->id, burst_types[proc->current_burst_type], proc->counter_cpu_burst, proc->num_cpu_burst, proc->current_burst_start);
+    printf("\t\tProcess %c Current Burst Preempted: %s\n", proc->id, (proc->cpu_burst_preempted) ? "Yes" : "No");
     printf("\t\tBursts:\n");
     for (int i = 0; i < proc->num_cpu_burst; ++i) {
         printf("\t\t\t%d) CPU: %dms, IO: %dms\n", i, proc->burst[i][0], proc->burst[i][1]); 

@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "round_robin.h"
 
 void FCFS(settings *config) {
@@ -44,18 +45,33 @@ void RR_transition_running_process(settings *config, process *proc, int t) {
         proc->current_burst_type = CPU_BURST;
         proc->current_burst_start = t;
         // state is already RUNNING
+        char *remaining = (proc->cpu_burst_preempted) ? "remaining " : "";
+        printf("time %dms: Process %c started using the CPU for %dms burst %s", t, proc->id, current_cpu_burst_length, remaining);
+        print_queue_items(config->q);
 
     } else if (current_burst_type == CPU_BURST && time_left_in_burst <= 0) {
         // 2) see if the process using the cpu finishes its burst (if so, context switch them out)
         proc->current_burst_type = CX_OFF;
         proc->current_burst_start = t;
+        proc->cpu_burst_preempted = false;
         current_burst[0] = 0;
+        printf("time %dms: Process %c completed a CPU burst; %d bursts to go ", t, proc->id, (proc->num_cpu_burst - proc->counter_cpu_burst) - 1);
+        print_queue_items(config->q);
+        printf("time %dms: Process %c switching out of CPU; will block on I/O until time %dms ", t, proc->id, current_io_burst_length + half_t_cx + t);
+        print_queue_items(config->q);
 
+    } else if (queue_length(q) == 1 && time_until_preempt <= 0 && current_burst_type == CPU_BURST) {
+        // 3a) see if any time slices expire (RR mode only) but no other processes are on queue (just print a message)
+        printf("Time slice expired; no preemption because ready queue is empty [Q <empty>]\n");
     } else if (queue_length(q) > 1 && time_until_preempt <= 0 && current_burst_type == CPU_BURST) {
-        // 3) see if any time slices expire (RR mode only); move them to the end of the queue
+        // 3b) see if any time slices expire (RR mode only); move them to the end of the queue
         current_burst[0] = time_left_in_burst;
+        proc->cpu_burst_preempted = true;
         proc->current_burst_type = CX_OFF;
         proc->current_burst_start = t;
+        printf("time %dms: Time slice expired; process %c preempted with %dms to go ", t, proc->id, time_left_in_burst);
+        print_queue_items(config->q);
+
     }
 }
 
@@ -74,6 +90,8 @@ void RR_handle_io_done(settings *config, process *proc, int t) {
     ++proc->counter_cpu_burst;
     proc->current_burst_start = -1;
     queue_push(config->q, proc, config->rr_queue_push_end);
+    printf("time %dms: Process %c arrived; added to ready queue ", t, proc->id);
+    print_queue_items(config->q);
 }
 
 void RR_handle_arrival(settings *config, process *proc, int t) {
@@ -83,7 +101,10 @@ void RR_handle_arrival(settings *config, process *proc, int t) {
     // If we get here, process should arrive now
     proc->state = READY;
     proc->counter_cpu_burst = 0;
+    proc->current_burst_type = CX_ON;
     queue_push(config->q, proc, config->rr_queue_push_end);
+    printf("time %dms: Process %c arrived; added to ready queue ", t, proc->id);
+    print_queue_items(config->q);
 }
 
 void RR_clock_tick(settings *config, int t) {
@@ -119,10 +140,13 @@ void RR_clock_tick(settings *config, int t) {
 void RR(settings *config) {
     //print_config(config);
     for (int i = 0; i < config->num_procs; ++i) print_process_summary(config->procs[i]);
-    return;
+    printf("time 0ms: Simulator started for RR ");
+    print_queue_items(config->q);
+
     int t = 0;
     for (t = 0; num_remaining_procs(config) > 0; ++t) {
         RR_clock_tick(config, t);
+        if (t >= 155) return;
     }
 }
 // Process A [NEW] (arrival time 9 ms) 16 CPU bursts

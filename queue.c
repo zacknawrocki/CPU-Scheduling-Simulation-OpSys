@@ -63,12 +63,23 @@ int queue_length(const queue *q) {
     return count;
 }
 
+void print_queue_items(const queue *q) {
+    printf("[Q ");
+    int i = q->start_idx;
+    if (q->items[i] == 0) {
+        printf("<empty>]\n");
+        return;
+    }
+    while (q->items[i] != NULL)  {
+        if (i != q->start_idx) printf(" ");
+        printf("%c", q->items[i]->id);
+        i = (i + 1) % q->capacity;
+    } 
+    printf("]\n");
+}
+
 void print_queue(const queue *q) {
     printf("Processes in Queue (%d, capacity: %d): ", queue_length(q), q->capacity);
-    int i = q->start_idx;
-    while (q->items[i] != NULL) {
-        printf("%c ", q->items[i]->id);
-        i = (i + 1) % q->capacity;
-    }
+    print_queue_items(q);
     printf("\n");
 }

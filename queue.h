@@ -17,3 +17,4 @@ void queue_push(queue *q, process *proc, bool to_end);
 void queue_close(queue *q);
 queue *queue_open();
 void print_queue(const queue *q);
+void print_queue_items(const queue *q);

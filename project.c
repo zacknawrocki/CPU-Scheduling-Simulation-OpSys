@@ -150,7 +150,7 @@ int main(int argc,char** argv)
                         valid = true;
                     }
                 }
-                printf("process %c %d (last) actual CPU burst %d\n", ptr_pcs->id, i+1, t_CPU_burst);
+                //printf("process %c %d (last) actual CPU burst %d\n", ptr_pcs->id, i+1, t_CPU_burst);
 
                 
                 burst[i][0] = t_CPU_burst;
@@ -174,7 +174,7 @@ int main(int argc,char** argv)
                         valid = true;
                     }
                 }
-                printf("process %c %d actual CPU burst %d, actual IO busrt %d\n", ptr_pcs->id, i+1, t_CPU_burst, t_IO_burst);
+                //printf("process %c %d actual CPU burst %d, actual IO busrt %d\n", ptr_pcs->id, i+1, t_CPU_burst, t_IO_burst);
 
                 burst[i][0] = t_CPU_burst;
                 burst[i][1] = t_IO_burst;
@@ -243,7 +243,7 @@ int main(int argc,char** argv)
 
     // Call FCFS and RR with template copy
     config = copy_config(config_template);
-    FCFS(config); 
+    //FCFS(config); 
     free_config(config);
 
     //config = copy_config(config_template);

@@ -15,10 +15,10 @@ typedef struct process {
     int counter_cpu_burst;
     burst_type current_burst_type;
     int current_burst_start;
+    bool cpu_burst_preempted;
     int **burst; 
     int tau;
     int next_tau;  //SRT need it to calculate tau
-    //int preemptions;
     int TAT;
     int WT;
     process_state state;
