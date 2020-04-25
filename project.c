@@ -243,21 +243,21 @@ int main(int argc,char** argv)
 
     // Call FCFS and RR with template copy
     config = copy_config(config_template);
-    //FCFS(config); 
+    FCFS(config); 
     free_config(config);
 
-    //config = copy_config(config_template);
+    config = copy_config(config_template);
     //RR(copy_config(config_template)); 
-    //free_config(config);
+    free_config(config);
 
     // Free config template when done
     free_config(config_template);
 
     // Other algorithms
-    //ptr_pcs = all_processes;
-    //SRT(ptr_pcs, num_of_proc, context_switch, alpha);
+    ptr_pcs = all_processes;
+    SRT(ptr_pcs, num_of_proc, context_switch, alpha);
 
-    //ptr_pcs = all_processes;
+    ptr_pcs = all_processes;
     //SJF();
 
     //need to free the dynamically allocated memory at the end of the code

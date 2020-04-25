@@ -138,7 +138,8 @@ void RR_clock_tick(settings *config, int t) {
 }
 
 void RR(settings *config) {
-    //print_config(config);
+    print_config(config);
+    return;
     for (int i = 0; i < config->num_procs; ++i) print_process_summary(config->procs[i]);
     printf("time 0ms: Simulator started for RR ");
     print_queue_items(config->q);
