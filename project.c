@@ -1605,6 +1605,11 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
     }
 
 
+    for (int i = 0; i < num_of_proc; ++i) {
+        process *proc = &srt_all_processes[i];
+        for (int j = 0; j < proc->num_cpu_burst; ++j) free(proc->burst[j]);
+        free(proc->burst);
+    }
     printf("time %dms: Simulator ended for SRT [Q <empty>]\n", t_run);
 
 
