@@ -2,3 +2,7 @@
 a.out
 simout.txt
 /project
+/test
+*.swp
+~*
+*.tmp

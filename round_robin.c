@@ -30,7 +30,7 @@ void RR_transition_running_process(settings *config, process *proc, int t) {
         } else if (current_cpu_burst_length > 0) {
             // process is being preempted: add to end of queue
             queue_push(q, proc, config->rr_queue_push_end); // push current proc to back of queue
-            proc->current_burst_type = NONE;
+            proc->current_burst_type = NO_BURST;
             proc->state = READY;
             proc->current_burst_start = -1;
         } else { // if current_cpu_burst == 0 and io burst isn't negative
@@ -130,19 +130,20 @@ void RR_clock_tick(settings *config, int t) {
     // 3) see if any time slices expire (RR mode only); move them to the end of the queue
     if (current_proc != NULL) RR_transition_running_process(config, current_proc, t);
 
-    // if the current proc was popped off queue because it CX_OFFed, start the context switch on the next one
-    if (current_proc != queue_peek(q) && queue_peek(q) != NULL) {
-        current_proc = queue_peek(q);
-        current_proc->state = RUNNING;
-        current_proc->current_burst_type = CX_ON;
-        current_proc->current_burst_start = t;
-    }
-
     // 4) see if any processes finish their IO (requeue them)
     for (int i = 0; i < num_procs; ++i) RR_handle_io_done(config, procs[i], t);
 
     // 5) see if any processes arrive (add them to queue after breaking ties)
     for (int i = 0; i < num_procs; ++i) RR_handle_arrival(config, procs[i], t);
+
+    // if the current proc was popped off queue because it CX_OFFed, start the context switch on the next one
+    current_proc = queue_peek(q);
+    if (current_proc != NULL && current_proc->state == READY) {
+        current_proc = queue_peek(q);
+        current_proc->state = RUNNING;
+        current_proc->current_burst_type = CX_ON;
+        current_proc->current_burst_start = t;
+    }
 
     // 6) see if there are no more processes (exit simulation)
     // No code needed. Checked in for loop
