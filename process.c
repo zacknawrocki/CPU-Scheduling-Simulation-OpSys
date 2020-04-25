@@ -42,7 +42,7 @@ int num_remaining_procs(const settings *config) {
 }
 
 void print_process_summary(const process *proc) {
-    printf("Process %c [NEW] (arrival time %d ms) %d CPU bursts\n", proc->id, proc->t_arrive, proc->num_cpu_burst);
+    printf("Process %c [NEW] (arrival time %d ms) %d CPU burst%s\n", proc->id, proc->t_arrive, proc->num_cpu_burst, proc->num_cpu_burst == 1 ? "" : "s");
 }
 
 void print_process(const process *proc) {

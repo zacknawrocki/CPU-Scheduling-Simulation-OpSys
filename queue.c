@@ -70,7 +70,7 @@ void print_queue_items(const queue *q) {
         process_state current_state = current_proc->state;
         burst_type current_burst_type = current_proc->current_burst_type;
         if (current_state == RUNNING && current_burst_type == CPU_BURST) skip_first = true;
-        //if (current_state == RUNNING && current_burst_type == CX_ON) skip_first = true;
+        if (current_state == RUNNING && current_burst_type == CX_ON) skip_first = true;
         if (current_state == RUNNING && current_burst_type == CX_OFF) skip_first = true;
         if (current_state == FINISHED) skip_first = true;
     }

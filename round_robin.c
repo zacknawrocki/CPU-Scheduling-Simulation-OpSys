@@ -27,17 +27,23 @@ void RR_transition_running_process(settings *config, process *proc, int t) {
             // this was the last burst, so there is no IO burst and we're done
             proc->current_burst_type = NO_BURST;
             proc->state = FINISHED;
+            //printf("* time %dms: Process %c finished context-switching away after its final CPU burst. Marking as finished and removed from queue. ", t, proc->id);
+            //print_queue_items(config->q);
         } else if (current_cpu_burst_length > 0) {
             // process is being preempted: add to end of queue
             queue_push(q, proc, config->rr_queue_push_end); // push current proc to back of queue
             proc->current_burst_type = NO_BURST;
             proc->state = READY;
             proc->current_burst_start = -1;
+            //printf("* time %dms: Process %c finished context-switching away after being preempted. It has been added back to the end of the queue and marked as READY ", t, proc->id);
+            //print_queue_items(config->q);
         } else { // if current_cpu_burst == 0 and io burst isn't negative
             // process had finished its cpu burst -- now do IO
             proc->current_burst_type = IO_BURST;
             proc->state = BLOCKED;
             proc->current_burst_start = t;
+            //printf("* time %dms: Process %c finished context-switching away after finishing CPU burst. Will now begin IO burst. ", t, proc->id);
+            //print_queue_items(config->q);
         }
 
     } else if (current_burst_type == CX_ON && time_in_burst >= half_t_cx) {
@@ -143,6 +149,8 @@ void RR_clock_tick(settings *config, int t) {
         current_proc->state = RUNNING;
         current_proc->current_burst_type = CX_ON;
         current_proc->current_burst_start = t;
+        //printf("* time %dms: Process %c found not running at top of queue. Beginning context switch on (will take %d ms). ", t, current_proc->id, config->t_cx / 2);
+        //print_queue_items(config->q);
     }
 
     // 6) see if there are no more processes (exit simulation)
