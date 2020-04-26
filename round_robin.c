@@ -80,7 +80,7 @@ void RR_transition_running_process(settings *config, process *proc, int t) {
         // 3a) see if any time slices expire (RR mode only) but no other processes are on queue (just print a message)
         current_burst[0] = time_left_in_burst;
         proc->current_burst_start = t;
-        printf("time %dms: Time slice expired; no preemption because ready queue is empty [Q <empty>]\n", t);
+        print_event(config, t, "Time slice expired; no preemption because ready queue is empty");
     } else if (queue_length(q) > 1 && time_until_preempt <= 0 && current_burst_type == CPU_BURST) {
         // 3b) see if any time slices expire (RR mode only); move them to the end of the queue
         current_burst[0] = time_left_in_burst;
