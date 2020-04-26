@@ -6,3 +6,4 @@ simout.txt
 *.swp
 ~*
 *.tmp
+/gmon.out

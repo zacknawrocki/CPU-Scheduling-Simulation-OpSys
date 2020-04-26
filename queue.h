@@ -6,7 +6,6 @@
 typedef struct queue {
     int capacity;
     int start_idx;
-    int end_idx;
     process **items;
 } queue;
 

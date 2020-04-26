@@ -15,6 +15,7 @@ typedef struct process {
     int counter_cpu_burst;
     burst_type current_burst_type;
     int current_burst_start;
+    int current_burst_start_overall;
     bool cpu_burst_preempted;
     int **burst; 
     int tau;

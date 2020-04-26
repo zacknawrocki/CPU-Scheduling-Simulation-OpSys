@@ -234,6 +234,7 @@ int main(int argc,char** argv)
     config_template->alpha = alpha;
     config_template->time_slice = time_slice;
     config_template->rr_queue_push_end = rr_queue_push_end;
+    compute_initial_results(config_template);
     settings *config = NULL;
 
     // Call FCFS and RR with template copy
