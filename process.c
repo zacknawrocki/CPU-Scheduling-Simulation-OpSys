@@ -16,6 +16,7 @@ process *copy_process(const process* proc_tmpl) {
     proc->counter_cpu_burst = 0;
     proc->current_burst_start = 0;
     proc->current_burst_start_overall = 0;
+    proc->queue_entry_time = 0;
     proc->cpu_burst_preempted = false;
     proc->state = NOT_YET_ARRIVED;
     proc->TAT = 0;

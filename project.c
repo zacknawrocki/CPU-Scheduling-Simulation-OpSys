@@ -14,7 +14,7 @@
 #include "round_robin.h"
 
 void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha);
-void output_file(int algorithm, int avg_BT, int avg_WT, int avg_TAT, int context_switches, int preemptions);
+void output_file(int algorithm, double avg_BT, double avg_WT, double avg_TAT, int context_switches, int preemptions);
 
 int main(int argc,char** argv) 
 { 
@@ -236,17 +236,22 @@ int main(int argc,char** argv)
     config_template->rr_queue_push_end = rr_queue_push_end;
     compute_initial_results(config_template);
     settings *config = NULL;
+    result const *results = NULL;
 
     // Call FCFS and RR with template copy
     config = copy_config(config_template);
 #ifndef NO_FCFS
     FCFS(config); 
+    results = compute_results(config);
+    output_file(2, results->avg_burst_time, results->avg_wait_time, results->avg_turnaround_time, results->num_cxs, results->num_preemptions);
 #endif
     free_config(config);
 
     config = copy_config(config_template);
 #ifndef NO_RR
     RR(config); 
+    results = compute_results(config);
+    output_file(3, results->avg_burst_time, results->avg_wait_time, results->avg_turnaround_time, results->num_cxs, results->num_preemptions);
 #endif
     free_config(config);
 
@@ -1635,14 +1640,14 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
 // 1 = SRT
 // 2 = FCFS
 // 3 = RR
-void output_file(int algorithm, int avg_BT, int avg_WT, int avg_TAT, int context_switches, int preemptions) {
+void output_file(int algorithm, double avg_BT, double avg_WT, double avg_TAT, int context_switches, int preemptions) {
     FILE * file;
     file = fopen("simout.txt", "a");
     char* algorithms[4] = {"SJF", "SRT", "FCFS", "RR"}; 
     fprintf(file, "Algorithm %s\n", algorithms[algorithm]);
-    fprintf(file, "-- average CPU burst time: %.3d ms\n", avg_BT);
-    fprintf(file, "-- average CPU wait time: %.3d ms\n", avg_WT);
-    fprintf(file, "-- average CPU turnaround time: %.3d ms\n", avg_TAT);
+    fprintf(file, "-- average CPU burst time: %.3f ms\n", avg_BT);
+    fprintf(file, "-- average CPU wait time: %.3f ms\n", avg_WT);
+    fprintf(file, "-- average CPU turnaround time: %.3f ms\n", avg_TAT);
     fprintf(file, "-- total number of context switches: %d\n", context_switches);
     fprintf(file, "-- total number of preemptions: %d\n", preemptions);
 }

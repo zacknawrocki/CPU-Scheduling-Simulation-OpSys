@@ -40,26 +40,30 @@ void print_config(const settings *config) {
 void compute_initial_results(settings *config) {
     result *res = &config->results;
     res->avg_burst_time = 0;
+    res->total_bursts = 0;
     res->total_turnaround_time = 0;
+    res->total_wait_time = 0;
+    res->avg_wait_time = 0;
     res->avg_turnaround_time = 0;
     res->num_cxs = 0;
     res->num_preemptions = 0;
 
-    int total_bursts = 0, total_burst_time = 0;
+    int total_burst_time = 0;
     for (int i = 0; i < config->num_procs; ++i) {
         process *proc = config->procs[i];
         int **bursts = proc->burst;
         for (int j = 0; j < proc->num_cpu_burst; ++j) {
             int *burst = bursts[j];
             total_burst_time += burst[0]; 
-            ++total_bursts;
+            ++res->total_bursts;
         }
     }
-    res->avg_burst_time = ((double) total_burst_time) / ((double) total_bursts);
+    res->avg_burst_time = ((double) total_burst_time) / ((double) res->total_bursts);
 }
 
 const result *compute_results(settings *config) {
     result *res = &config->results;
-    res->avg_turnaround_time = ((double) res->total_turnaround_time) / ((double) config->num_procs);
+    res->avg_turnaround_time = ((double) res->total_turnaround_time) / ((double) res->total_bursts);
+    res->avg_wait_time = ((double) res->total_wait_time) / ((double) res->total_bursts);
     return res; 
 }

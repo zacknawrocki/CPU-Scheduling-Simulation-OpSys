@@ -26,6 +26,7 @@ void RR_transition_running_process(settings *config, process *proc, int t) {
         if (current_cpu_burst_length > 0) {
             // process is being preempted: add to end of queue
             queue_push(q, proc, config->rr_queue_push_end); // push current proc to back of queue
+            proc->queue_entry_time = t;
             proc->current_burst_type = NO_BURST;
             proc->state = READY;
             proc->current_burst_start = -1;
@@ -33,12 +34,16 @@ void RR_transition_running_process(settings *config, process *proc, int t) {
             //print_queue_items(config->q);
         } else if (current_io_burst_length < 0) {
             // this was the last burst, so there is no IO burst and we're done
+            config->results.total_turnaround_time += t - proc->current_burst_start_overall;
+            proc->current_burst_start_overall = -1;
             proc->current_burst_type = NO_BURST;
             proc->state = FINISHED;
             //printf("* time %dms: Process %c finished context-switching away after its final CPU burst. Marking as finished and removed from queue. ", t, proc->id);
             //print_queue_items(config->q);
         } else { // if current_cpu_burst == 0 and io burst isn't negative
             // process had finished its cpu burst -- now do IO
+            config->results.total_turnaround_time += t - proc->current_burst_start_overall;
+            proc->current_burst_start_overall = -1;
             proc->current_burst_type = IO_BURST;
             proc->state = BLOCKED;
             proc->current_burst_start = t;
@@ -65,7 +70,6 @@ void RR_transition_running_process(settings *config, process *proc, int t) {
         proc->cpu_burst_preempted = false;
         current_burst[0] = 0;
         int bursts_left = (proc->num_cpu_burst - proc->counter_cpu_burst) - 1;
-
         if (current_burst[1] < 0) {
             // this was the last burst, so there is no IO burst and we're done
             proc->state = FINISHED;
@@ -89,6 +93,7 @@ void RR_transition_running_process(settings *config, process *proc, int t) {
         proc->cpu_burst_preempted = true;
         proc->current_burst_type = CX_OFF;
         proc->current_burst_start = t;
+        ++config->results.num_preemptions;
         printf("time %dms: Time slice expired; process %c preempted with %dms to go ", t, proc->id, time_left_in_burst);
         print_queue_items(config->q);
 
@@ -110,6 +115,8 @@ void RR_handle_io_done(settings *config, process *proc, int t) {
     ++proc->counter_cpu_burst;
     proc->current_burst_type = NO_BURST;
     proc->current_burst_start = -1;
+    proc->current_burst_start_overall = t;
+    proc->queue_entry_time = t;
     queue_push(config->q, proc, config->rr_queue_push_end);
     printf("time %dms: Process %c completed I/O; added to ready queue ", t, proc->id);
     print_queue_items(config->q);
@@ -124,6 +131,8 @@ void RR_handle_arrival(settings *config, process *proc, int t) {
     proc->counter_cpu_burst = 0;
     proc->current_burst_type = NO_BURST;
     proc->current_burst_start = t;
+    proc->current_burst_start_overall = t;
+    proc->queue_entry_time = t;
     queue_push(config->q, proc, config->rr_queue_push_end);
     printf("time %dms: Process %c arrived; added to ready queue ", t, proc->id);
     print_queue_items(config->q);
@@ -154,6 +163,8 @@ void RR_clock_tick(settings *config, int t) {
         current_proc->state = RUNNING;
         current_proc->current_burst_type = CX_ON;
         current_proc->current_burst_start = t;
+        config->results.total_wait_time += t - current_proc->queue_entry_time;
+        ++config->results.num_cxs;
         //printf("* time %dms: Process %c found not running at top of queue. Beginning context switch on (will take %d ms). ", t, current_proc->id, config->t_cx / 2);
         //print_queue_items(config->q);
     }

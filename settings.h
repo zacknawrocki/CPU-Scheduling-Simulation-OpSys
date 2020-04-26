@@ -5,8 +5,11 @@
 
 typedef struct result {
     double avg_burst_time;
+    int total_bursts;
     int total_turnaround_time;
     double avg_turnaround_time;
+    int total_wait_time;
+    double avg_wait_time;
     int num_cxs;
     int num_preemptions;
 } result;
