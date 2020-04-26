@@ -8,6 +8,12 @@
 #include "settings.h"
 #include "process.h"
 #include "queue.h"
+
+#ifndef DISPLAY_MAX_T
+#define DISPLAY_MAX_T INT_MAX
+#endif
+
+void print_event(settings *config, int t, const char *fmt, ...);
 void FCFS(settings *config);
 void RR(settings *config);
 void RR_transition_running_process(settings *config, process *proc, int t);

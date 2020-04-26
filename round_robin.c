@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdarg.h>
 #include "round_robin.h"
 
 void FCFS(settings *config) {
@@ -31,7 +32,6 @@ void RR_transition_running_process(settings *config, process *proc, int t) {
             proc->state = READY;
             proc->current_burst_start = -1;
             //printf("* time %dms: Process %c finished context-switching away after being preempted. It has been added back to the end of the queue and marked as READY ", t, proc->id);
-            //print_queue_items(config->q);
         } else if (current_io_burst_length < 0) {
             // this was the last burst, so there is no IO burst and we're done
             config->results.total_turnaround_time += t - proc->current_burst_start_overall;
@@ -39,7 +39,6 @@ void RR_transition_running_process(settings *config, process *proc, int t) {
             proc->current_burst_type = NO_BURST;
             proc->state = FINISHED;
             //printf("* time %dms: Process %c finished context-switching away after its final CPU burst. Marking as finished and removed from queue. ", t, proc->id);
-            //print_queue_items(config->q);
         } else { // if current_cpu_burst == 0 and io burst isn't negative
             // process had finished its cpu burst -- now do IO
             config->results.total_turnaround_time += t - proc->current_burst_start_overall;
@@ -48,7 +47,6 @@ void RR_transition_running_process(settings *config, process *proc, int t) {
             proc->state = BLOCKED;
             proc->current_burst_start = t;
             //printf("* time %dms: Process %c finished context-switching away after finishing CPU burst. Will now begin IO burst. ", t, proc->id);
-            //print_queue_items(config->q);
         }
 
     } else if (current_burst_type == CX_ON && time_in_burst >= half_t_cx) {
@@ -57,11 +55,10 @@ void RR_transition_running_process(settings *config, process *proc, int t) {
         proc->current_burst_start = t;
         proc->state = RUNNING;
         if (proc->cpu_burst_preempted) {
-            printf("time %dms: Process %c started using the CPU with %dms burst remaining ", t, proc->id, current_cpu_burst_length);
+            print_event(config, t, "Process %c started using the CPU with %dms burst remaining", proc->id, current_cpu_burst_length);
         } else {
-            printf("time %dms: Process %c started using the CPU for %dms burst ", t, proc->id, current_cpu_burst_length);
+            print_event(config, t, "Process %c started using the CPU for %dms burst", proc->id, current_cpu_burst_length);
         }
-        print_queue_items(config->q);
 
     } else if (current_burst_type == CPU_BURST && time_left_in_burst <= 0) {
         // 2) see if the process using the cpu finishes its burst (if so, context switch them out)
@@ -73,13 +70,10 @@ void RR_transition_running_process(settings *config, process *proc, int t) {
         if (current_burst[1] < 0) {
             // this was the last burst, so there is no IO burst and we're done
             proc->state = FINISHED;
-            printf("time %dms: Process %c terminated ", t, proc->id);
-            print_queue_items(config->q);
+            print_event(config, t, "Process %c terminated", proc->id);
         } else {
-            printf("time %dms: Process %c completed a CPU burst; %d burst%s to go ", t, proc->id, bursts_left, bursts_left == 1 ? "" : "s");
-            print_queue_items(config->q);
-            printf("time %dms: Process %c switching out of CPU; will block on I/O until time %dms ", t, proc->id, current_io_burst_length + half_t_cx + t);
-            print_queue_items(config->q);
+            print_event(config, t, "Process %c completed a CPU burst; %d burst%s to go", proc->id, bursts_left, bursts_left == 1 ? "" : "s");
+            print_event(config, t, "Process %c switching out of CPU; will block on I/O until time %dms", proc->id, current_io_burst_length + half_t_cx + t);
         }
 
     } else if (queue_length(q) == 1 && time_until_preempt <= 0 && current_burst_type == CPU_BURST) {
@@ -94,8 +88,7 @@ void RR_transition_running_process(settings *config, process *proc, int t) {
         proc->current_burst_type = CX_OFF;
         proc->current_burst_start = t;
         ++config->results.num_preemptions;
-        printf("time %dms: Time slice expired; process %c preempted with %dms to go ", t, proc->id, time_left_in_burst);
-        print_queue_items(config->q);
+        print_event(config, t, "Time slice expired; process %c preempted with %dms to go", proc->id, time_left_in_burst);
 
     }
 }
@@ -118,8 +111,7 @@ void RR_handle_io_done(settings *config, process *proc, int t) {
     proc->current_burst_start_overall = t;
     proc->queue_entry_time = t;
     queue_push(config->q, proc, config->rr_queue_push_end);
-    printf("time %dms: Process %c completed I/O; added to ready queue ", t, proc->id);
-    print_queue_items(config->q);
+    print_event(config, t, "Process %c completed I/O; added to ready queue", proc->id);
 }
 
 void RR_handle_arrival(settings *config, process *proc, int t) {
@@ -134,8 +126,7 @@ void RR_handle_arrival(settings *config, process *proc, int t) {
     proc->current_burst_start_overall = t;
     proc->queue_entry_time = t;
     queue_push(config->q, proc, config->rr_queue_push_end);
-    printf("time %dms: Process %c arrived; added to ready queue ", t, proc->id);
-    print_queue_items(config->q);
+    print_event(config, t, "Process %c arrived; added to ready queue", proc->id);
 }
 
 void RR_clock_tick(settings *config, int t) {
@@ -166,7 +157,6 @@ void RR_clock_tick(settings *config, int t) {
         config->results.total_wait_time += t - current_proc->queue_entry_time;
         ++config->results.num_cxs;
         //printf("* time %dms: Process %c found not running at top of queue. Beginning context switch on (will take %d ms). ", t, current_proc->id, config->t_cx / 2);
-        //print_queue_items(config->q);
     }
 
     // 6) see if there are no more processes (exit simulation)
@@ -188,3 +178,18 @@ void RR(settings *config) {
     print_queue_items(config->q);
 
 }
+
+void print_event(settings *config, int t, const char *fmt, ...) {
+	if (config->num_events_printed > DISPLAY_MAX_T) return;
+	va_list ap;
+
+	printf("time %dms: ", t); 
+	va_start(ap, fmt);
+	vprintf(fmt, ap);
+	va_end(ap);
+	printf(" ");
+    print_queue_items(config->q);
+	++config->num_events_printed;
+}
+
+
