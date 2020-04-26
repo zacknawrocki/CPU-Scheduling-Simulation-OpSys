@@ -70,7 +70,8 @@ void RR_transition_running_process(settings *config, process *proc, int t) {
         if (current_burst[1] < 0) {
             // this was the last burst, so there is no IO burst and we're done
             proc->state = FINISHED;
-            print_event(config, t, "Process %c terminated", proc->id);
+            printf("time %dms: Process %c terminated ", t, proc->id);
+            print_queue_items(config->q);
         } else {
             print_event(config, t, "Process %c completed a CPU burst; %d burst%s to go", proc->id, bursts_left, bursts_left == 1 ? "" : "s");
             print_event(config, t, "Process %c switching out of CPU; will block on I/O until time %dms", proc->id, current_io_burst_length + half_t_cx + t);
