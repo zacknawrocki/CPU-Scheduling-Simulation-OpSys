@@ -229,7 +229,6 @@ int main(int argc,char** argv)
     for (int i = 0; i < config_template->num_procs; ++i) {
         config_template->procs[i] = copy_process(&all_processes[i]);
     }
-    config_template->num_events_printed = 0;
     config_template->t_cx = context_switch;
     config_template->q = queue_open();
     config_template->alpha = alpha;

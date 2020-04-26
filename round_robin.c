@@ -180,7 +180,7 @@ void RR(settings *config) {
 }
 
 void print_event(settings *config, int t, const char *fmt, ...) {
-	if (config->num_events_printed > DISPLAY_MAX_T) return;
+	if (t >= DISPLAY_MAX_T) return;
 	va_list ap;
 
 	printf("time %dms: ", t); 
@@ -189,7 +189,6 @@ void print_event(settings *config, int t, const char *fmt, ...) {
 	va_end(ap);
 	printf(" ");
     print_queue_items(config->q);
-	++config->num_events_printed;
 }
 
 

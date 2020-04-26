@@ -15,7 +15,6 @@ typedef struct result {
 } result;
 
 typedef struct settings {
-    int num_events_printed;
     int num_procs;
     process **procs;
     int t_cx;
