@@ -911,7 +911,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
                             }
                         }
 
-                        printf("%d\n", finish_pcs);
+                        //printf("%d\n", finish_pcs);
 
                         if (finish_pcs == true){
 
