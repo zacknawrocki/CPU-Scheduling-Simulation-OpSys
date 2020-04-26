@@ -13,8 +13,8 @@ project:
 project-no-algo: 
 	$(C) $(CFLAGS) $(CFLAGS_DEBUG) -DNO_ALGOS -o project $(SOURCES) $(LDFLAGS)
 
-project-fcfs-only: 
-	$(C) $(CFLAGS) $(CFLAGS_DEBUG) -DNO_SRT -DNO_SJF -DNO_RR -o project $(SOURCES) $(LDFLAGS)
+project-rr-only: 
+	$(C) $(CFLAGS) $(CFLAGS_DEBUG) -DNO_SRT -DNO_SJF -DNO_FCFS -o project $(SOURCES) $(LDFLAGS)
 
 clean: 
 	rm -f *.o project a.out

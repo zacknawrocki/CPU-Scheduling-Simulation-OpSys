@@ -23,19 +23,19 @@ void RR_transition_running_process(settings *config, process *proc, int t) {
     if (current_burst_type == CX_OFF && time_in_burst >= half_t_cx) { // if the context was switching off this proc
         // 1a) see if the running process finishes its cx_off switch (either take them off the queue or requeue)
         queue_pop(q);
-        if (current_io_burst_length < 0) {
-            // this was the last burst, so there is no IO burst and we're done
-            proc->current_burst_type = NO_BURST;
-            proc->state = FINISHED;
-            //printf("* time %dms: Process %c finished context-switching away after its final CPU burst. Marking as finished and removed from queue. ", t, proc->id);
-            //print_queue_items(config->q);
-        } else if (current_cpu_burst_length > 0) {
+        if (current_cpu_burst_length > 0) {
             // process is being preempted: add to end of queue
             queue_push(q, proc, config->rr_queue_push_end); // push current proc to back of queue
             proc->current_burst_type = NO_BURST;
             proc->state = READY;
             proc->current_burst_start = -1;
             //printf("* time %dms: Process %c finished context-switching away after being preempted. It has been added back to the end of the queue and marked as READY ", t, proc->id);
+            //print_queue_items(config->q);
+        } else if (current_io_burst_length < 0) {
+            // this was the last burst, so there is no IO burst and we're done
+            proc->current_burst_type = NO_BURST;
+            proc->state = FINISHED;
+            //printf("* time %dms: Process %c finished context-switching away after its final CPU burst. Marking as finished and removed from queue. ", t, proc->id);
             //print_queue_items(config->q);
         } else { // if current_cpu_burst == 0 and io burst isn't negative
             // process had finished its cpu burst -- now do IO
@@ -51,8 +51,11 @@ void RR_transition_running_process(settings *config, process *proc, int t) {
         proc->current_burst_type = CPU_BURST;
         proc->current_burst_start = t;
         proc->state = RUNNING;
-        char *remaining = (proc->cpu_burst_preempted) ? "remaining " : "";
-        printf("time %dms: Process %c started using the CPU for %dms burst %s", t, proc->id, current_cpu_burst_length, remaining);
+        if (proc->cpu_burst_preempted) {
+            printf("time %dms: Process %c started using the CPU with %dms burst remaining ", t, proc->id, current_cpu_burst_length);
+        } else {
+            printf("time %dms: Process %c started using the CPU for %dms burst ", t, proc->id, current_cpu_burst_length);
+        }
         print_queue_items(config->q);
 
     } else if (current_burst_type == CPU_BURST && time_left_in_burst <= 0) {
@@ -77,7 +80,9 @@ void RR_transition_running_process(settings *config, process *proc, int t) {
 
     } else if (queue_length(q) == 1 && time_until_preempt <= 0 && current_burst_type == CPU_BURST) {
         // 3a) see if any time slices expire (RR mode only) but no other processes are on queue (just print a message)
-        printf("Time slice expired; no preemption because ready queue is empty [Q <empty>]\n");
+        current_burst[0] = time_left_in_burst;
+        proc->current_burst_start = t;
+        printf("time %dms: Time slice expired; no preemption because ready queue is empty [Q <empty>]\n", t);
     } else if (queue_length(q) > 1 && time_until_preempt <= 0 && current_burst_type == CPU_BURST) {
         // 3b) see if any time slices expire (RR mode only); move them to the end of the queue
         current_burst[0] = time_left_in_burst;
