@@ -1,3 +1,15 @@
+/*
+Operating Systems CSCI-4210 Project
+CPU Scheduling Simulation
+
+
+Note: Although SJF is working, we have been having issues with it on Submitty.
+For this reason, we still thought it would be best to attach it, regardless,
+commented out.
+*/
+
+
+
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -247,6 +259,11 @@ int main(int argc,char** argv)
 #endif
     free_config(config);
 
+    ptr_pcs = all_processes;
+#ifndef NO_SRT
+    SRT(ptr_pcs, num_of_proc, context_switch, alpha);
+#endif
+
     config = copy_config(config_template);
 #ifndef NO_RR
     RR(config); 
@@ -259,10 +276,6 @@ int main(int argc,char** argv)
     free_config(config_template);
 
     // Other algorithms
-    ptr_pcs = all_processes;
-#ifndef NO_SRT
-    SRT(ptr_pcs, num_of_proc, context_switch, alpha);
-#endif
 
     ptr_pcs = all_processes;
 #ifndef NO_SJF
@@ -292,7 +305,7 @@ int main(int argc,char** argv)
 void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double alpha){
 
     // variables for output file
-    //int srt_output_avg_cpu_burst_time = 0;
+    double srt_output_avg_cpu_burst_time = 0;
     int srt_output_total_cpu_burst_time = 0;
     int srt_output_num_cpu_burst = 0;
     int srt_output_total_turnaround_time = 0;
@@ -1630,6 +1643,7 @@ void SRT(struct process *ptr_pcs, int num_of_proc, int context_switch, double al
     //printf("-- average turnaround time: %d\n", srt_output_total_turnaround_time/num_of_proc);
     //printf("-- total number of context switches: %d\n", srt_output_total_context_switch);
     //printf("-- total number of preemptions: %d\n", srt_output_total_preemption);
+    output_file(1, srt_output_avg_cpu_burst_time, (srt_output_total_turnaround_time - srt_output_total_cpu_burst_time) / num_of_proc, srt_output_total_turnaround_time / num_of_proc, srt_output_total_context_switch, srt_output_total_preemption);
 
 }
 
