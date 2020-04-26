@@ -1650,6 +1650,8 @@ void output_file(int algorithm, double avg_BT, double avg_WT, double avg_TAT, in
     fprintf(file, "-- average turnaround time: %.3f ms\n", avg_TAT);
     fprintf(file, "-- total number of context switches: %d\n", context_switches);
     fprintf(file, "-- total number of preemptions: %d\n", preemptions);
+    fflush(file);
+    fclose(file);
 }
 
 
