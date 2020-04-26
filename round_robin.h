@@ -10,7 +10,11 @@
 #include "queue.h"
 
 #ifndef DISPLAY_MAX_T
-#define DISPLAY_MAX_T INT_MAX
+    #ifdef DEBUG
+        #define DISPLAY_MAX_T INT_MAX
+    #else
+        #define DISPLAY_MAX_T 1000
+    #endif
 #endif
 
 void print_event(settings *config, int t, const char *fmt, ...);
