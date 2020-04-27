@@ -5,7 +5,7 @@ CPU Scheduling Simulation
 
 Note: Although SJF is working, we have been having issues with it on Submitty.
 For this reason, we still thought it would be best to attach it, regardless,
-commented out.
+commented out. You can see the code in SJF.c
 */
 
 
